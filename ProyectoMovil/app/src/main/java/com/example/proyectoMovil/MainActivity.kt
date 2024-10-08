@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+
 
 @Composable
 fun SearchBar(
@@ -53,9 +55,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AvanceTheme {
-                val navController = rememberNavController() // Devuelve NavHostController
-                MainAppNavHost(navController = navController)
+            Surface(tonalElevation = 5.dp) {
+                AvanceTheme {
+                    //val navController =  // Devuelve NavHostController
+                    MainAppNavHost(navController = rememberNavController())
+                }
             }
         }
     }
@@ -79,7 +83,7 @@ fun StatusItem(title: String, count: Int, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable(onClick = onClick), // Aquí está el onClick
+            .clickable(onClick = onClick), // Aquí está el onClic
         color = Color(0xFFF1F1F1),
         shape = MaterialTheme.shapes.medium
     ) {
@@ -119,6 +123,7 @@ fun MainApp(navController: NavHostController) {
 
 @Composable
 fun MyListsSection(navController: NavHostController) {
+
     Text(
         text = "Notas a Agregar",
         fontSize = 18.sp,
@@ -252,10 +257,14 @@ fun NotificationsScreen(navController: NavHostController) {
 
 @Composable
 fun MainAppNavHost(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = "main") {
-        composable("main") { MainApp(navController) }
-        composable("add_note") { AddNoteScreen(navController) }
-        composable("notifications") { NotificationsScreen(navController) } // Nueva pantalla de notificaciones
+    Surface(tonalElevation = 15.dp) {
+        AvanceTheme {
+            NavHost(navController = navController, startDestination = "main") {
+                composable("main") { MainApp(navController) }
+                composable("add_note") { AddNoteScreen(navController) }
+                composable("notifications") { NotificationsScreen(navController) } // Nueva pantalla de notificaciones
+            }
+        }
     }
 }
 

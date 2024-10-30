@@ -1,3 +1,0 @@
-com.example.inventory.test
-style WhiteBackgroundDialogTheme
-style WhiteBackgroundTheme

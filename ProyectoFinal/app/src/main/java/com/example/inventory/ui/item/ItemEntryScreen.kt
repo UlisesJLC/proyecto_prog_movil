@@ -16,30 +16,51 @@
 
 package com.example.inventory.ui.item
 
+import android.R.attr.value
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
@@ -47,7 +68,10 @@ import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Currency
+import java.util.Date
 import java.util.Locale
 
 object ItemEntryDestination : NavigationDestination {
@@ -128,6 +152,8 @@ fun ItemInputForm(
     onValueChange: (ItemDetails) -> Unit = {},
     enabled: Boolean = true
 ) {
+
+    var mostrarDatePicker by remember { mutableStateOf(false) }
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_medium))
@@ -135,7 +161,7 @@ fun ItemInputForm(
         OutlinedTextField(
             value = itemDetails.titulo,
             onValueChange = { onValueChange(itemDetails.copy(titulo = it)) },
-            label = { Text(stringResource(R.string.item_title_req)) },
+            label = { Text("Titulo") },
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = true
@@ -143,7 +169,7 @@ fun ItemInputForm(
         OutlinedTextField(
             value = itemDetails.descripcion,
             onValueChange = { onValueChange(itemDetails.copy(descripcion = it)) },
-            label = { Text(stringResource(R.string.item_description_req)) },
+            label = { Text("Descripcion") },
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = true
@@ -151,19 +177,21 @@ fun ItemInputForm(
         OutlinedTextField(
             value = itemDetails.clasificacion,
             onValueChange = { onValueChange(itemDetails.copy(clasificacion = it)) },
-            label = { Text(stringResource(R.string.item_classification_req)) },
+            label = { Text("Nota") },
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = true
         )
-        OutlinedTextField(
+
+        /*OutlinedTextField(
             value = itemDetails.horaCumplimiento?.toString() ?: "",
             onValueChange = { onValueChange(itemDetails.copy(horaCumplimiento = it.toLongOrNull())) },
             label = { Text(stringResource(R.string.item_due_time)) },
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = true
-        )
+        )*/
+        DatePickerModal({},itemDetails=itemDetails,onValueChange=onValueChange)
     }
 }
 
@@ -184,4 +212,63 @@ private fun ItemEntryScreenPreview() {
             onSaveClick = {}
         )
     }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+
+@Composable
+fun DatePickerModal(
+    onDateSelected: (Long?) -> Unit,
+    itemDetails: ItemDetails,
+    onValueChange: (ItemDetails) -> Unit = {}
+    //onValueChange:()->Unit
+) {
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    val selectedDate = datePickerState.selectedDateMillis?.let {
+        convertMillisToDate(it)
+    } ?: ""
+    OutlinedTextField(
+        value = itemDetails.horaCumplimiento?.toString() ?: selectedDate,
+        onValueChange = { onValueChange(itemDetails.copy(horaCumplimiento = datePickerState.selectedDateMillis)) },
+        label = { Text(itemDetails.horaCumplimiento?.toString() ?: selectedDate) },
+        readOnly = true,
+        trailingIcon = {
+            IconButton(onClick = { showDatePicker = !showDatePicker }) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Select date"
+                )
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+    )
+    if(showDatePicker){
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker=false },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDateSelected(datePickerState.selectedDateMillis)
+                    showDatePicker=false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {showDatePicker=false}) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+}
+
+fun convertMillisToDate(millis: Long): String {
+    val formatter = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
+    return formatter.format(Date(millis))
 }

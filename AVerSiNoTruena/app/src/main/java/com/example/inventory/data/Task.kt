@@ -13,5 +13,12 @@ data class Task(
     val titulo: String,
     val descripcion: String,
     val fechaHoraVencimiento: String, // Guarda la fecha y hora de vencimiento de la tarea como String
-    val estado: Boolean = false // true si la tarea está cumplida, false si no
+    val estado: Boolean = false, // true si la tarea está cumplida, false si no
+
+
+    //Estos son los agregados recientemente
+    val horaCumplimiento: Long? = null, // Guarda la fecha y hora de la tarea en milisegundos, si es tarea
+    val videoUri: String? = null, // Para imagen o video
+    val fotoUri: String? = null, // Para imagen o video
+    val audioUri: String? = null  // Para audio
 )

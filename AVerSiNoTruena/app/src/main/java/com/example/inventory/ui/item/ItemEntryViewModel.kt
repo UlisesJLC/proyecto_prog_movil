@@ -73,26 +73,6 @@ data class ItemUiState(
     val isEntryValid: Boolean = false
 )
 
-data class ItemDetails(
-    val id: Int = 0,
-    val titulo: String = "",
-    val descripcion: String = "",
-    val clasificacion: String = "",
-    val horaCumplimiento: Long? = null,
-    val estado: Boolean = false
-)
-
-/**
- * Extensión para convertir [ItemDetails] a [Item]. Si algún valor es inválido, se usa un valor predeterminado.
- */
-fun ItemDetails.toItem(): Item = Item(
-    id = id,
-    titulo = titulo,
-    descripcion = descripcion,
-    clasificacion = clasificacion,
-    horaCumplimiento = horaCumplimiento,
-    estado = estado
-)
 
 /**
  * Extensión para convertir [Item] a [ItemUiState].
@@ -105,11 +85,40 @@ fun Item.toItemUiState(isEntryValid: Boolean = false): ItemUiState = ItemUiState
 /**
  * Extensión para convertir [Item] a [ItemDetails].
  */
+
+
+data class ItemDetails(
+    val id: Int = 0,
+    val titulo: String = "",
+    val descripcion: String = "",
+    val clasificacion: String = "",
+    val horaCumplimiento: Long? = null,
+    val estado: Boolean = false,
+    val videoUri: String? = null, // Added field
+    val fotoUri: String? = null,  // Added field
+    val audioUri: String? = null  // Added field
+)
+
+fun ItemDetails.toItem(): Item = Item(
+    id = id,
+    titulo = titulo,
+    descripcion = descripcion,
+    clasificacion = clasificacion,
+    horaCumplimiento = horaCumplimiento,
+    estado = estado,
+    videoUri = videoUri,
+    fotoUri = fotoUri,
+    audioUri = audioUri
+)
+
 fun Item.toItemDetails(): ItemDetails = ItemDetails(
     id = id,
     titulo = titulo,
     descripcion = descripcion,
     clasificacion = clasificacion,
     horaCumplimiento = horaCumplimiento,
-    estado = estado
+    estado = estado,
+    videoUri = videoUri,
+    fotoUri = fotoUri,
+    audioUri = audioUri
 )

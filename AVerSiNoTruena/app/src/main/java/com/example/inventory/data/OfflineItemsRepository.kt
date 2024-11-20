@@ -30,4 +30,11 @@ class OfflineItemsRepository(private val itemDao: ItemDao) : ItemsRepository {
     override suspend fun deleteItem(item: Item) = itemDao.delete(item)
 
     override suspend fun updateItem(item: Item) = itemDao.update(item)
+
+    override fun getItemsWithVideo(): Flow<List<Item>> = itemDao.getItemsWithVideo()
+
+    override fun getItemsWithAudio(): Flow<List<Item>> = itemDao.getItemsWithAudio()
+
+    override fun getItemsWithPhoto(): Flow<List<Item>> = itemDao.getItemsWithPhoto()
+
 }

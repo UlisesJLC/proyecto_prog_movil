@@ -68,5 +68,9 @@
     <string name="task_title_req">Task title Req</string>
     <string name="task_description_req">Task Description Req</string>
     <string name="task_classification_req">Task Classification Req</string>
+    <string name="item_audio">Item Audio</string>
+    <string name="item_photo">Item Photo</string>
+    <string name="item_video">Item Video</string>
+
 
 </resources>

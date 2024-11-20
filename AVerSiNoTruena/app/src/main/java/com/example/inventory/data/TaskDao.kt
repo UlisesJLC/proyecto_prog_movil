@@ -8,12 +8,23 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface TaskDao {
-
-    @Query("SELECT * from tasks")
+    @Query("SELECT * FROM tasks")
     fun getAllTasks(): Flow<List<Task>>
 
-    @Query("SELECT * from tasks WHERE id = :id")
-    fun getTask(id: Int): Flow<Task>
+    @Query("SELECT * FROM tasks WHERE id = :id")
+    fun getTask(id: Int): Flow<Task?>
+
+    @Query("SELECT * FROM tasks WHERE estado = :estado ORDER BY fechaHoraVencimiento")
+    fun getTasksByEstado(estado: Boolean): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE videoUri IS NOT NULL")
+    fun getTasksWithVideo(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE fotoUri IS NOT NULL")
+    fun getTasksWithPhoto(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE audioUri IS NOT NULL")
+    fun getTasksWithAudio(): Flow<List<Task>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(task: Task)

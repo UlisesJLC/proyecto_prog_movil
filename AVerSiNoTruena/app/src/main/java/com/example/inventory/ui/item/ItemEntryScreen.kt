@@ -134,6 +134,25 @@ fun ItemEntryBody(
             onValueChange = onItemValueChange,
             modifier = Modifier.fillMaxWidth()
         )
+        // Add buttons for multimedia input
+        Button(
+            onClick = { /* TODO: Add logic to pick a video */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Add Video")
+        }
+        Button(
+            onClick = { /* TODO: Add logic to pick a photo */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Add Photo")
+        }
+        Button(
+            onClick = { /* TODO: Add logic to pick an audio */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Add Audio")
+        }
         Button(
             onClick = onSaveClick,
             enabled = itemUiState.isEntryValid,
@@ -144,6 +163,7 @@ fun ItemEntryBody(
         }
     }
 }
+
 
 @Composable
 fun ItemInputForm(

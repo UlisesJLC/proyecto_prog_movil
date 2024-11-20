@@ -51,4 +51,19 @@ interface  ItemsRepository {
      * Update item in the data source
      */
     suspend fun updateItem(item: Item)
+
+    /**
+     * Retrieve all the items that have a video URI from the data source.
+     */
+    fun getItemsWithVideo(): Flow<List<Item>>
+
+    /**
+     * Retrieve all the items that have an audio URI from the data source.
+     */
+    fun getItemsWithAudio(): Flow<List<Item>>
+
+    /**
+     * Retrieve all the items that have a photo URI from the data source.
+     */
+    fun getItemsWithPhoto(): Flow<List<Item>>
 }

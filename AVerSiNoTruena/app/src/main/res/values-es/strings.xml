@@ -56,4 +56,9 @@
     <string name="task_title_req">Título de la tarea req</string>
     <string name="task_description_req">Descripción de la tarea req</string>
     <string name="task_classification_req">Clasificación de la tarea req</string>
+    <string name="item_audio">Audio Nota</string>
+    <string name="item_photo">Nota Foto</string>
+    <string name="item_video">Nota Video</string>
+
+
 </resources>

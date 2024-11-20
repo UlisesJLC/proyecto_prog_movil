@@ -228,9 +228,33 @@ fun ItemDetails(
                 itemDetail = if (item.estado) "Cumplida" else "Pendiente",
                 modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
             )
+            // Display multimedia fields if available
+            item.videoUri?.let {
+                ItemDetailsRow(
+                    labelResID = R.string.item_video,
+                    itemDetail = it,
+                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
+                )
+            }
+            item.fotoUri?.let {
+                ItemDetailsRow(
+                    labelResID = R.string.item_photo,
+                    itemDetail = it,
+                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
+                )
+            }
+            item.audioUri?.let {
+                ItemDetailsRow(
+                    //labelResID = R.string.item_audio,
+                    labelResID = R.string.item_audio,
+                    itemDetail = it,
+                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
+                )
+            }
         }
     }
 }
+
 
 @Composable
 private fun ItemDetailsRow(

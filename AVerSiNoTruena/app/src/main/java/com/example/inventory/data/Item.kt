@@ -30,5 +30,11 @@ data class Item(
     val descripcion: String,
     val clasificacion: String, // Puede ser "nota" o "tarea"
     val horaCumplimiento: Long? = null, // Guarda la fecha y hora de la tarea en milisegundos, si es tarea
-    val estado: Boolean = false // true si la tarea está cumplida, false si no
+    val estado: Boolean = false, // true si la tarea está cumplida, false si no
+
+    val videoUri: String? = null, // Para imagen o video
+    val fotoUri: String? = null, // Para imagen o video
+    val audioUri: String? = null  // Para audio
+
+
 )

@@ -50,4 +50,14 @@ interface ItemDao {
 
     @Delete
     suspend fun delete(item: Item)
+
+    @Query("SELECT * FROM items WHERE videoUri IS NOT NULL")
+    fun getItemsWithVideo(): Flow<List<Item>>
+
+    @Query("SELECT * FROM items WHERE audioUri IS NOT NULL")
+    fun getItemsWithAudio(): Flow<List<Item>>
+
+    @Query("SELECT * FROM items WHERE fotoUri IS NOT NULL")
+    fun getItemsWithPhoto(): Flow<List<Item>>
+
 }

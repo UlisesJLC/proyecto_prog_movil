@@ -1,8 +1,16 @@
 package com.example.inventory.data
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 
-class OfflineTasksRepository(private val taskDao: TaskDao) : TasksRepository {
+class OfflineTasksRepository(
+    private val taskDao: TaskDao,
+    private val context: Context // Aquí agregas el contexto
+) : TasksRepository {
     override fun getAllTasksStream(): Flow<List<Task>> = taskDao.getAllTasks()
 
     override fun getTaskStream(id: Int): Flow<Task?> = taskDao.getTask(id)
@@ -20,4 +28,6 @@ class OfflineTasksRepository(private val taskDao: TaskDao) : TasksRepository {
     override suspend fun updateTask(task: Task) = taskDao.update(task)
 
     override suspend fun deleteTask(task: Task) = taskDao.delete(task)
+
+
 }

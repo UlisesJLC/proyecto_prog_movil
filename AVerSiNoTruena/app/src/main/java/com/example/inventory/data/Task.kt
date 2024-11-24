@@ -22,3 +22,12 @@ data class Task(
     val fotoUri: String? = null, // Para imagen o video
     val audioUri: String? = null  // Para audio
 )
+
+@Entity
+data class Alarm(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val noteId: Int, // Relación con una nota
+    val alarmTime: Long, // Hora de la alarma en timestamp
+    val title: String, // Título o descripción
+    val isActive: Boolean = true // Estado de la alarma
+)

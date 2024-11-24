@@ -16,6 +16,10 @@
 
 package com.example.inventory.ui.task
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,18 +33,25 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
+import com.example.inventory.data.Task
 import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 object TaskEntryDestination : NavigationDestination {
     override val route = "task_entry"
@@ -69,6 +80,15 @@ fun TaskEntryScreen(
             taskUiState = viewModel.taskUiState,
             onTaskValueChange = viewModel::updateUiState,
             onSaveClick = {
+
+                val task = Task(
+                    titulo = viewModel.taskUiState.taskDetails.titulo,
+                    descripcion = viewModel.taskUiState.taskDetails.descripcion,
+                    fechaHoraVencimiento = viewModel.taskUiState.taskDetails.fechaHoraVencimiento ?: "",
+                    estado = false // o lo que necesites por defecto
+                )
+
+
                 coroutineScope.launch {
                     viewModel.saveTask()
                     navigateBack()
@@ -116,6 +136,9 @@ fun TaskInputForm(
     onValueChange: (TaskDetails) -> Unit = {},
     enabled: Boolean = true
 ) {
+    var selectedDate by remember { mutableStateOf(taskDetails.fechaHoraVencimiento ?: "") }
+    val context = LocalContext.current
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_medium))
@@ -137,16 +160,61 @@ fun TaskInputForm(
             singleLine = true
         )
 
+        // Selector de fecha y hora
         OutlinedTextField(
-            value = taskDetails.fechaHoraVencimiento ?: "",
-            onValueChange = { onValueChange(taskDetails.copy(fechaHoraVencimiento = it)) },
+            value = selectedDate,
+            onValueChange = { /* Evitar edición manual */ },
             label = { Text(stringResource(R.string.task_due_time)) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) {
+                    // Mostrar diálogo de fecha
+                    showDatePicker(
+                        context = context,
+                        onDateSelected = { date ->
+                            // Mostrar diálogo de hora después de seleccionar la fecha
+                            showTimePicker(context) { time ->
+                                val dateTime = "$date $time"
+                                selectedDate = dateTime
+                                onValueChange(taskDetails.copy(fechaHoraVencimiento = dateTime))
+                            }
+                        }
+                    )
+                },
+            enabled = false, // Evitar edición manual
             singleLine = true
         )
     }
 }
+
+fun showDatePicker(context: Context, onDateSelected: (String) -> Unit) {
+    val calendar = Calendar.getInstance()
+    DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val formattedDate = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
+            onDateSelected(formattedDate)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).show()
+}
+
+fun showTimePicker(context: Context, onTimeSelected: (String) -> Unit) {
+    val calendar = Calendar.getInstance()
+    TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            val formattedTime = String.format("%02d:%02d", hourOfDay, minute)
+            onTimeSelected(formattedTime)
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true // Modo de 24 horas
+    ).show()
+}
+
 
 @Preview(showBackground = true)
 @Composable

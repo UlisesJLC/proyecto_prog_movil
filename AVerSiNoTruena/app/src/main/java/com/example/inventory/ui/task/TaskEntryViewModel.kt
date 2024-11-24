@@ -31,6 +31,8 @@ class TaskEntryViewModel(private val tasksRepository: TasksRepository) : ViewMod
             titulo.isNotBlank() && descripcion.isNotBlank()
         }
     }
+
+
 }
 
 data class TaskUiState(

@@ -68,6 +68,16 @@ android {
 }
 
 dependencies {
+    implementation( "androidx.media3:media3-common:1.4.1")
+    implementation ( "androidx.work:work-runtime-ktx:2.8.1" )
+
+    implementation( "androidx.media3:media3-exoplayer:1.4.1")
+    implementation( "androidx.media3:media3-ui:1.4.1")
+    implementation( "androidx.media3:media3-datasource-okhttp:1.4.1")
+
+
+
+    //implementation("androidx.media3:media3-common-ktx:1.4.1")
     // CameraX core library using the camera2 implementation
     val camerax_version = "1.5.0-alpha03"
     // The following line is optional, as the core library is included indirectly by camera-camera2

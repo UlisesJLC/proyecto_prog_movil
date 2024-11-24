@@ -19,6 +19,7 @@ package com.example.inventory.ui.task
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,18 @@ import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import androidx.work.*
+import com.example.inventory.worker.NotificationWorker
+
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Data
+// com.example.inventory.work.scheduleAlarmNotification
+import java.util.concurrent.TimeUnit
+
+import java.text.SimpleDateFormat
+import java.util.*
+
 
 object TaskEntryDestination : NavigationDestination {
     override val route = "task_entry"
@@ -67,6 +80,8 @@ fun TaskEntryScreen(
     viewModel: TaskEntryViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current // Obtener el contexto de forma segura dentro de un @Composable
+
     Scaffold(
         topBar = {
             InventoryTopAppBar(
@@ -80,17 +95,31 @@ fun TaskEntryScreen(
             taskUiState = viewModel.taskUiState,
             onTaskValueChange = viewModel::updateUiState,
             onSaveClick = {
-
                 val task = Task(
                     titulo = viewModel.taskUiState.taskDetails.titulo,
                     descripcion = viewModel.taskUiState.taskDetails.descripcion,
                     fechaHoraVencimiento = viewModel.taskUiState.taskDetails.fechaHoraVencimiento ?: "",
-                    estado = false // o lo que necesites por defecto
+                    estado = false // Configuración predeterminada
                 )
-
 
                 coroutineScope.launch {
                     viewModel.saveTask()
+
+
+
+                    // Programar notificación
+                    val notificationWork = OneTimeWorkRequestBuilder<NotificationWorker>()
+                        .setInitialDelay(calculateDelay(task.fechaHoraVencimiento), TimeUnit.MILLISECONDS)
+                        .setInputData(
+                            Data.Builder()
+                                .putString("task_title", task.titulo)
+                                .putString("task_description", task.descripcion)
+                                .build()
+                        )
+                        .build()
+
+                    WorkManager.getInstance(context).enqueue(notificationWork)
+
                     navigateBack()
                 }
             },
@@ -101,6 +130,7 @@ fun TaskEntryScreen(
         )
     }
 }
+
 
 @Composable
 fun TaskEntryBody(
@@ -187,6 +217,19 @@ fun TaskInputForm(
     }
 }
 
+fun calculateDelay(dateTime: String): Long {
+    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    return try {
+        val taskTime = formatter.parse(dateTime)?.time ?: 0L
+        val currentTime = System.currentTimeMillis()
+        taskTime - currentTime
+    } catch (e: Exception) {
+        Log.e("TaskEntry", "Error parsing date: $e")
+        0L
+    }
+}
+
+
 fun showDatePicker(context: Context, onDateSelected: (String) -> Unit) {
     val calendar = Calendar.getInstance()
     DatePickerDialog(
@@ -214,6 +257,9 @@ fun showTimePicker(context: Context, onTimeSelected: (String) -> Unit) {
         true // Modo de 24 horas
     ).show()
 }
+
+
+
 
 
 @Preview(showBackground = true)

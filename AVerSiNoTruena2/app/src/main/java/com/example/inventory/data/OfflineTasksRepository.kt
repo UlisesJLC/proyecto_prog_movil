@@ -11,6 +11,8 @@ class OfflineTasksRepository(
     private val taskDao: TaskDao,
     private val context: Context // Aquí agregas el contexto
 ) : TasksRepository {
+    suspend fun getLatestTaskId(): Int? = taskDao.getLatestTaskId()
+
     override fun getAllTasksStream(): Flow<List<Task>> = taskDao.getAllTasks()
 
     override fun getTaskStream(id: Int): Flow<Task?> = taskDao.getTask(id)

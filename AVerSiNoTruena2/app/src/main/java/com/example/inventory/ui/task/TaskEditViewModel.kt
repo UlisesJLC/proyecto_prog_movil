@@ -1,5 +1,6 @@
 package com.example.inventory.ui.task
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,15 +16,48 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.await
 import com.example.inventory.data.Task
 import com.example.inventory.worker.NotificationWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+
+import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.concurrent.CancellationException
+import java.util.concurrent.Executors
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+
+suspend fun <T> ListenableFuture<T>.await(): T = suspendCancellableCoroutine { cont ->
+    addListener(
+        {
+            try {
+                cont.resume(get(), null)
+            } catch (e: Exception) {
+                cont.resumeWithException(e)
+            }
+        },
+        { runnable -> runnable.run() } // Ejecutar en el hilo actual
+    )
+    cont.invokeOnCancellation {
+        cancel(true) // Cancela el futuro si se cancela la coroutine
+    }
+}
+
+
+
 
 /**
  * ViewModel to retrieve and update a task from the [TasksRepository]'s data source.
@@ -60,6 +94,9 @@ class TaskEditViewModel(
             // Cancelar alarmas existentes para esta tarea
             cancelAlarmsForTask(context, taskId)
 
+
+            delay(100)
+
             // Actualizar la tarea en la base de datos
             tasksRepository.updateTask(updatedTask)
 
@@ -68,22 +105,46 @@ class TaskEditViewModel(
         }
     }
 
-    /**
-     * Cancela todas las alarmas asociadas a esta tarea.
-     */
     private fun cancelAlarmsForTask(context: Context, taskId: Int) {
         val workManager = WorkManager.getInstance(context)
-        try {
-            // Obtener todas las tareas asociadas a la etiqueta "task_$taskId"
-            val workInfos = workManager.getWorkInfosByTag("task_$taskId").get()
-            for (workInfo in workInfos) {
-                Log.d("TaskEditViewModel", "Cancelando alarma asociada: ${workInfo.id}")
-                workManager.cancelWorkById(workInfo.id)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Convertir ListenableFuture a un objeto compatible con coroutines
+                val workInfos = suspendCoroutine<List<WorkInfo>> { continuation ->
+                    workManager.getWorkInfosByTag("task_$taskId")
+                        .addListener(
+                            { // Continuar cuando se complete el futuro
+                                try {
+                                    continuation.resume(workManager.getWorkInfosByTag("task_$taskId").get())
+                                } catch (e: Exception) {
+                                    continuation.resumeWithException(e)
+                                }
+                            },
+                            Executors.newSingleThreadExecutor()
+                        )
+                }
+
+                if (workInfos.isNotEmpty()) {
+                    Log.d("TaskEditViewModel", "Cancelando ${workInfos.size} alarmas asociadas para task_$taskId")
+                    for (workInfo in workInfos) {
+                        Log.d(
+                            "TaskEditViewModel",
+                            "Cancelando alarma asociada: ${workInfo.id} (estado actual: ${workInfo.state})"
+                        )
+                        workManager.cancelWorkById(workInfo.id)
+                    }
+                } else {
+                    Log.d("TaskEditViewModel", "No se encontraron alarmas para task_$taskId")
+                }
+            } catch (e: Exception) {
+                Log.e("TaskEditViewModel", "Error al cancelar alarmas para task_$taskId: ${e.message}")
             }
-        } catch (e: Exception) {
-            Log.e("TaskEditViewModel", "Error al cancelar alarmas para task_$taskId: ${e.message}")
         }
     }
+
+
+
 
 
 

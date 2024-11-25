@@ -10,7 +10,9 @@ import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import com.example.inventory.data.Task
 import com.example.inventory.data.TasksRepository
+import com.example.inventory.data.OfflineTasksRepository
 import androidx.work.WorkManager
+import com.example.inventory.data.InventoryDatabase
 import com.example.inventory.worker.NotificationWorker
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -37,8 +39,18 @@ class TaskEntryViewModel(private val tasksRepository: TasksRepository) : ViewMod
             }
             // Insertar/Actualizar la tarea en la base de datos
             tasksRepository.insertTask(task)
+
+            val database = InventoryDatabase.getDatabase(context)
+            val taskDao = database.taskDao()
+            val repository = OfflineTasksRepository(taskDao, context)
+            val latestTaskId = repository.getLatestTaskId()
+
+
+
             // Programar nuevas alarmas
-            scheduleAlarmsForTask(context, task)
+            if (latestTaskId != null) {
+                scheduleAlarmsForTask(context, task , latestTaskId)
+            }
         }
     }
 
@@ -53,11 +65,15 @@ class TaskEntryViewModel(private val tasksRepository: TasksRepository) : ViewMod
         workManager.cancelAllWorkByTag("task_$taskId")
     }
 
-    private fun scheduleAlarmsForTask(context: Context, task: Task) {
+    private fun scheduleAlarmsForTask(context: Context, task: Task, latestTaskId: Int ) {
         val workManager = WorkManager.getInstance(context)
         val alarmTimes = calculateAlarmTimes(task.fechaHoraVencimiento)
 
+
+
+
         alarmTimes.forEach { delay ->
+            Log.d("TaskEditViewModel", "Programando alarma para task_${latestTaskId} en $delay ms")
             val notificationWork = OneTimeWorkRequestBuilder<NotificationWorker>()
                 .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .setInputData(
@@ -66,7 +82,7 @@ class TaskEntryViewModel(private val tasksRepository: TasksRepository) : ViewMod
                         .putString("task_description", task.descripcion)
                         .build()
                 )
-                .addTag("task_${task.id}") // Etiqueta única para esta tarea
+                .addTag("task_${latestTaskId}") // Etiqueta única para esta tarea
                 .build()
 
             workManager.enqueue(notificationWork)

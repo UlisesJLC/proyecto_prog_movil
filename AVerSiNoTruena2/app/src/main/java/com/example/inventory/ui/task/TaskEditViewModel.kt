@@ -73,11 +73,18 @@ class TaskEditViewModel(
      */
     private fun cancelAlarmsForTask(context: Context, taskId: Int) {
         val workManager = WorkManager.getInstance(context)
-        workManager.getWorkInfosByTag("task_$taskId").get().forEach { workInfo ->
-            Log.d("TaskEditViewModel", "Cancelando alarma: ${workInfo.id}")
-            workManager.cancelWorkById(workInfo.id)
+        try {
+            // Obtener todas las tareas asociadas a la etiqueta "task_$taskId"
+            val workInfos = workManager.getWorkInfosByTag("task_$taskId").get()
+            for (workInfo in workInfos) {
+                Log.d("TaskEditViewModel", "Cancelando alarma asociada: ${workInfo.id}")
+                workManager.cancelWorkById(workInfo.id)
+            }
+        } catch (e: Exception) {
+            Log.e("TaskEditViewModel", "Error al cancelar alarmas para task_$taskId: ${e.message}")
         }
     }
+
 
 
     /**

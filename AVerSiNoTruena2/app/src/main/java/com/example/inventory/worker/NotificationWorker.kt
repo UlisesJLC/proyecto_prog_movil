@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -18,6 +19,8 @@ class NotificationWorker(
         val title = inputData.getString("task_title") ?: "Task Reminder"
         val description = inputData.getString("task_description") ?: "You have a task due!"
 
+        Log.d("NotificationWorker", "Creating notification with title: $title and description: $description")
+
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -29,6 +32,7 @@ class NotificationWorker(
                 NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)
+            Log.d("NotificationWorker", "Notification channel created: task_channel")
         }
 
         // Crear la notificación
@@ -39,6 +43,8 @@ class NotificationWorker(
             .build()
 
         notificationManager.notify(1, notification)
+        Log.d("NotificationWorker", "Notification sent with ID: 1")
+
         return Result.success()
     }
 }

@@ -30,6 +30,7 @@ abstract class InventoryDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
     abstract fun taskDao(): TaskDao
 
+
     companion object {
         @Volatile
         private var Instance: InventoryDatabase? = null
@@ -48,5 +49,6 @@ abstract class InventoryDatabase : RoomDatabase() {
                     .also { Instance = it }
             }
         }
+
     }
 }

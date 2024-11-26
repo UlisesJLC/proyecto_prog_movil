@@ -31,22 +31,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.inventory.ui.theme.InventoryTheme
 
 
-
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+
+
         setContent {
             InventoryTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     InventoryApp()
-                    //HomeScreen()
                 }
             }
         }
     }
 }
+
+
 

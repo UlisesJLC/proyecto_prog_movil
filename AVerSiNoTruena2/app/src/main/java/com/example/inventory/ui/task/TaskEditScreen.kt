@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,6 +38,7 @@ fun TaskEditScreen(
     viewModel: TaskEditViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current // Obtener el contexto actual
     Scaffold(
         topBar = {
             InventoryTopAppBar(
@@ -52,7 +54,7 @@ fun TaskEditScreen(
             onTaskValueChange = viewModel::updateUiState,
             onSaveClick = {
                 coroutineScope.launch {
-                    viewModel.updateTask()
+                    viewModel.updateTask(context)
                     navigateBack()
                 }
             },
@@ -66,6 +68,7 @@ fun TaskEditScreen(
         )
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

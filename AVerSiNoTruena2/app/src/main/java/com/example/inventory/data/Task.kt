@@ -22,3 +22,4 @@ data class Task(
     val fotoUri: String? = null, // Para imagen o video
     val audioUri: String? = null  // Para audio
 )
+

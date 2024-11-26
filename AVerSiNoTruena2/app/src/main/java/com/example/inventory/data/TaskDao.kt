@@ -8,6 +8,10 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface TaskDao {
+    @Query("SELECT MAX(id) FROM tasks")
+    suspend fun getLatestTaskId(): Int?
+
+
     @Query("SELECT * FROM tasks")
     fun getAllTasks(): Flow<List<Task>>
 

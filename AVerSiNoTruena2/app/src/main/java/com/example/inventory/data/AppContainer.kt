@@ -8,6 +8,7 @@ import android.content.Context
 interface AppContainer {
     val itemsRepository: ItemsRepository
     val tasksRepository: TasksRepository
+
 }
 
 /**
@@ -24,6 +25,6 @@ class AppDataContainer(private val context: Context) : AppContainer {
     }
 
     override val tasksRepository: TasksRepository by lazy {
-        OfflineTasksRepository(database.taskDao())
+        OfflineTasksRepository(database.taskDao(),context)
     }
 }

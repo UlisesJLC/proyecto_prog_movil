@@ -29,14 +29,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.inventory.ui.theme.InventoryTheme
-
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import java.io.File
 
 
 class MainActivity : ComponentActivity() {
 
+    private var audioFile: File? = null
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        val uri = ComposeFileProvider.getImageUri(applicationContext)
         setContent {
             InventoryTheme {
                 Surface(
@@ -44,6 +48,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     InventoryApp()
                     //HomeScreen()
+                    //ImagePicker()
                 }
             }
         }

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Inventario</string>
+    <string name="attention">Atención</string>
+    <string name="back_button">Atrás</string>
+    <string name="delete">Eliminar</string>
+    <string name="delete_question">¿Estás seguro que quieres eliminar?</string>
+    <string name="no_item_description">¡Ups!\nNo hay notas tilín.\nPresiona + para agregar.</string>
+    <string name="edit_item_title">Editar elemento</string>
+    <string name="item">Elemento</string>
+    <string name="item_detail_title">Detalles del elemento</string>
+    <string name="item_entry_title">Agregar elemento</string>
+    <string name="item_name_req">Nombre del elemento*</string>
+    <string name="item_price_req">Precio del elemento*</string>
+    <string name="no">No</string>
+    <string name="price">Precio</string>
+    <string name="quantity_in_stock">Cantidad en stock</string>
+    <string name="in_stock">%d en stock</string>
+    <string name="quantity_req">Cantidad en stock*</string>
+    <string name="save_action">Guardar</string>
+    <string name="sell">Vender</string>
+    <string name="yes">Sí</string>
+    <string name="required_fields">*campos obligatorios</string>
+    <string name="task_due_time">Fecha de vencimiento de la tarea</string>
+
+
+    <string name="item_title">Título del elemento</string>
+    <string name="item_description">Descripción del elemento</string>
+    <string name="item_classification">Clasificación del elemento</string>
+    <string name="item_status">Estado del elemento</string>
+
+    <string name="complete_task">Completar tarea</string>
+    <string name="item_title_req">Título del elemento req</string>
+    <string name="item_description_req">Descripción del elemento req</string>
+    <string name="item_classification_req">Clasificación del elemento req</string>
+    <string name="item_due_time">Fecha de vencimiento de la tarea</string>
+    <string name="classification_note">Nota de clasificación</string>
+
+
+    <string name="task_detail_title">Título de detalle de la tarea</string>
+
+    <string name="edit_task_title">Editar título de la tarea</string>
+
+    <string name="task_title">Título de la tarea</string>
+
+    <string name="task_description">Descripción de la tarea</string>
+
+    <string
+    name="task_classification">Clasificación de la tarea</string>
+
+    <string name="task_status">Estado de la tarea</string>
+
+
+    <string name="task_entry_title">Título de entrada de tarea</string>
+    <string name="task_title_req">Título de la tarea req</string>
+    <string name="task_description_req">Descripción de la tarea req</string>
+    <string name="task_classification_req">Clasificación de la tarea req</string>
+    <string name="item_audio">Audio Nota</string>
+    <string name="item_photo">Nota Foto</string>
+    <string name="item_video">Nota Video</string>
+
+
+</resources>

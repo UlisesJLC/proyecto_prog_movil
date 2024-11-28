@@ -16,6 +16,8 @@ data class Task(
     val estado: Boolean = false, // true si la tarea está cumplida, false si no
 
 
+
+
     //Estos son los agregados recientemente
     val horaCumplimiento: Long? = null, // Guarda la fecha y hora de la tarea en milisegundos, si es tarea
     val videoUri: String? = null, // Para imagen o video

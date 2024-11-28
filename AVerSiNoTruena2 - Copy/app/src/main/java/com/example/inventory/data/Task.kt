@@ -24,8 +24,8 @@ data class Task(
 
 
     // Almacenar múltiples URIs como listas en JSON
-    val videoUris: List<String> = emptyList(),
-    val fotoUris: List<String> = emptyList(),
-    val audioUris: List<String> = emptyList()
+    val videoUri: String? = null,
+    val fotoUri: String? = null,
+    val audioUri: String? = null,
 )
 

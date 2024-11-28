@@ -112,7 +112,6 @@ dependencies {
 
     implementation("com.google.accompanist:accompanist-permissions:0.28.0") // O la última versión disponible
 
-
     implementation("androidx.camera:camera-core:${camerax_version}")
     implementation("androidx.camera:camera-camera2:${camerax_version}")
 

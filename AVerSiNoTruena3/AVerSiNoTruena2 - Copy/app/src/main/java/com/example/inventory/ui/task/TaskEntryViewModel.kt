@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.inventory.data.Alarm
-import com.example.inventory.data.AlarmDao
 import com.example.inventory.data.AlarmRepository
 import com.example.inventory.data.Task
 import com.example.inventory.data.TasksRepository
+import com.google.gson.Gson
 import java.util.UUID
 
 
@@ -16,6 +16,27 @@ class TaskEntryViewModel(
     private val tasksRepository: TasksRepository,
     private val alarmsRepository: AlarmRepository
 ) : ViewModel() {
+
+    // Lista temporal de URIs
+    private val imageUris = mutableListOf<String>()
+
+    fun addImageUri(uri: String) {
+        imageUris.add(uri)
+        updatePhotoUrisInUiState()
+    }
+
+    fun removeImageUri(uri: String) {
+        imageUris.remove(uri)
+        updatePhotoUrisInUiState()
+    }
+
+    private fun updatePhotoUrisInUiState() {
+        val serializedUris = Gson().toJson(imageUris)
+        updateUiState(
+            taskUiState.taskDetails.copy(fotoUri = serializedUris)
+        )
+    }
+
 
     var taskUiState by mutableStateOf(TaskUiState())
         private set
@@ -62,7 +83,8 @@ data class TaskDetails(
     val titulo: String = "",
     val descripcion: String = "",
     val fechaHoraVencimiento: String? = null,
-    val estado: Boolean = false
+    val estado: Boolean = false,
+    val fotoUri: String? = null // Serializado como JSON
 )
 
 fun TaskDetails.toTask(): Task = Task(

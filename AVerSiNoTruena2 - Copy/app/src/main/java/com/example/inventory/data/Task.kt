@@ -19,9 +19,13 @@ data class Task(
 
 
     //Estos son los agregados recientemente
+    val esTask: Boolean? = null, // Guarda la fecha y hora de la tarea en milisegundos, si es tarea
     val horaCumplimiento: Long? = null, // Guarda la fecha y hora de la tarea en milisegundos, si es tarea
-    val videoUri: String? = null, // Para imagen o video
-    val fotoUri: String? = null, // Para imagen o video
-    val audioUri: String? = null  // Para audio
+
+
+    // Almacenar múltiples URIs como listas en JSON
+    val videoUris: List<String> = emptyList(),
+    val fotoUris: List<String> = emptyList(),
+    val audioUris: List<String> = emptyList()
 )
 

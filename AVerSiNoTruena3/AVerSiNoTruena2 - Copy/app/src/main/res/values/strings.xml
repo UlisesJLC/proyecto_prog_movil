@@ -14,6 +14,8 @@
   ~ limitations under the License.
   -->
 <resources>
+
+    <string name="record_audio">Permiso para grabar</string>
     <string name="app_name">Inventory</string>
     <string name="attention">Attention</string>
     <string name="back_button">Back</string>

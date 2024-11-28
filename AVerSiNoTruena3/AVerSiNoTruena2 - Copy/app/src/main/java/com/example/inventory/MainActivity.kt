@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     InventoryApp()
+
                 }
             }
         }

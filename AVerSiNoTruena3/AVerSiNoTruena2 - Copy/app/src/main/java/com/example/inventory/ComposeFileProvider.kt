@@ -12,6 +12,7 @@ class ComposeFileProvider : FileProvider(
     R.xml.filepaths
 ){
     companion object {
+
         fun getVideoUri(context: Context): Uri? {
             val contentResolver = context.contentResolver
             val contentValues = ContentValues().apply {
@@ -43,6 +44,21 @@ class ComposeFileProvider : FileProvider(
                 context,
                 authority,
                 file,
+            )
+        }
+        fun getAudioUri(context: Context): Uri {
+            val directory = File(context.cacheDir, "audio") // Crea un directorio "audio" en la caché
+            directory.mkdirs() // Crea el directorio si no existe
+            val file = File.createTempFile(
+                "audio_record_",
+                ".3gp", // Puedes cambiar la extensión si quieres
+                directory
+            )
+            val authority = context.packageName + ".fileprovider"
+            return getUriForFile(
+                context,
+                authority,
+                file
             )
         }
     }

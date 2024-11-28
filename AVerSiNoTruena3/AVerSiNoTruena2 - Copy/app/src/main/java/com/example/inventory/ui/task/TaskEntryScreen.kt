@@ -18,7 +18,7 @@ package com.example.inventory.ui.task
 
 
 // com.example.inventory.work.scheduleAlarmNotification
-
+//import com.example.inventory.ui.task.GrabarAudioScreen // Si quieres usar GrabarAudioScreen
 import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -66,6 +66,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -77,7 +78,6 @@ object TaskEntryDestination : NavigationDestination {
     override val route = "task_entry"
     override val titleRes = R.string.task_entry_title
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskEntryScreen(
@@ -357,7 +357,7 @@ fun buttonTakePhoto(viewModel: TaskEntryViewModel) {
             if (cameraPermissionState.status.isGranted) {
                 uri = ComposeFileProvider.getImageUri(context)
                 Log.d("buttonTakePhoto", "Generated URI: $uri")
-                cameraLauncher.launch(uri)
+                cameraLauncher.launch(uri!!)
             } else {
                 cameraPermissionState.launchPermissionRequest()
             }
@@ -384,13 +384,12 @@ fun buttonTakeVideo(viewModel: TaskEntryViewModel) {
             }
         }
     )
-
     Button(
         onClick = {
             if (cameraPermissionState.status.isGranted) {
                 uri = ComposeFileProvider.getVideoUri(context)
                 Log.d("buttonTakeVideo", "Generated URI: $uri")
-                videoLauncher.launch(uri)
+                videoLauncher.launch(uri!!)
             } else {
                 cameraPermissionState.launchPermissionRequest()
             }
@@ -398,11 +397,34 @@ fun buttonTakeVideo(viewModel: TaskEntryViewModel) {
     ) {
         Text("Tomar video")
     }
+    takeAudio()
 }
 
+@Composable
+fun takeAudio(){
+    val context = LocalContext.current
+    val recorder by lazy {
+        AndroidAudioRecorder(context)
+    }
 
+    val player by lazy {
+        AndroidAudioPlayer(context)
+    }
+    var audioFile: File? = null
+    var audioUri by remember { mutableStateOf<Uri?>(null) }
 
-
+    GrabarAudioScreen(
+        onClickStGra = {
+            File(context.cacheDir, "audio.mp3").also {
+                recorder.start(it)
+                audioFile = it
+            }
+        },
+        onClickSpGra = {recorder.stop()},
+        onClickStRe = { audioFile?.let { player.start(it) } },
+        onClickSpRe = {player.stop()}
+    )
+}
 /*
 @Preview(showBackground = true)
 @Composable

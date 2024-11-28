@@ -68,13 +68,12 @@ android {
 }
 
 dependencies {
-    implementation( "androidx.media3:media3-common:1.4.1")
+
     implementation ( "androidx.work:work-runtime-ktx:2.8.1" )
 
 
 
-    implementation( "androidx.media3:media3-exoplayer:1.4.1")
-    implementation( "androidx.media3:media3-ui:1.4.1")
+
     implementation( "androidx.media3:media3-datasource-okhttp:1.4.1")
 
     implementation ("com.google.code.gson:gson:2.8.2")
@@ -82,20 +81,7 @@ dependencies {
 
     //implementation("androidx.media3:media3-common-ktx:1.4.1")
     // CameraX core library using the camera2 implementation
-    val camerax_version = "1.5.0-alpha03"
-    // The following line is optional, as the core library is included indirectly by camera-camera2
-    implementation("androidx.camera:camera-core:${camerax_version}")
-    implementation("androidx.camera:camera-camera2:${camerax_version}")
-    // If you want to additionally use the CameraX Lifecycle library
-    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
-    // If you want to additionally use the CameraX VideoCapture library
-    implementation("androidx.camera:camera-video:${camerax_version}")
-    // If you want to additionally use the CameraX View class
-    implementation("androidx.camera:camera-view:${camerax_version}")
-    // If you want to additionally add CameraX ML Kit Vision Integration
-    implementation("androidx.camera:camera-mlkit-vision:${camerax_version}")
-    // If you want to additionally use the CameraX Extensions library
-    implementation("androidx.camera:camera-extensions:${camerax_version}")
+
 
     implementation("androidx.compose.material3:material3:1.1.2")
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))
@@ -122,9 +108,7 @@ dependencies {
 
     // dependencias para la multimedia
     implementation("com.google.accompanist:accompanist-permissions:0.28.0") // O la última versión disponible
-    implementation("androidx.camera:camera-core:${camerax_version}")
-    implementation("androidx.camera:camera-camera2:${camerax_version}")
     implementation("io.coil-kt:coil-compose:2.4.0") // O la versión más reciente
-    implementation("com.google.android.exoplayer:exoplayer:2.18.7") // O la última versión disponible
+    implementation("com.google.android.exoplayer:exoplayer:2.15.1") // O la última versión disponible
 
 }

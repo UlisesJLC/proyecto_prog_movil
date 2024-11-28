@@ -38,11 +38,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.PlayerView
-import kotlinx.coroutines.time.withTimeoutOrNull
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
 import android.Manifest
-import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.isGranted
 
 

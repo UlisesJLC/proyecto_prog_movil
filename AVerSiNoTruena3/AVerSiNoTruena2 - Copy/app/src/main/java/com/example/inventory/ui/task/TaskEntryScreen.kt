@@ -16,7 +16,7 @@
 
 package com.example.inventory.ui.task
 
-import androidx.media3.ui.PlayerView
+
 import android.app.DatePickerDialog
 import android.Manifest
 import android.app.TimePickerDialog
@@ -198,8 +198,7 @@ fun TaskEntryBody(
             onValueChange = onTaskValueChange,
             modifier = Modifier.fillMaxWidth()
         )
-        buttonTakePhoto()
-        buttonTakeVideo()
+
         Button(
 
             onClick = onSaveClick,
@@ -217,6 +216,8 @@ fun TaskEntryBody(
         ) {
             Text(text = stringResource(R.string.add_alarm))
         }
+        buttonTakePhoto()
+        buttonTakeVideo()
     }
 }
 

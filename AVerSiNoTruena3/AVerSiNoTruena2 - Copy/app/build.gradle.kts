@@ -72,9 +72,6 @@ dependencies {
     implementation ( "androidx.work:work-runtime-ktx:2.8.1" )
 
 
-    implementation ("com.google.code.gson:gson:2.8.2")
-
-
 
     implementation( "androidx.media3:media3-exoplayer:1.4.1")
     implementation( "androidx.media3:media3-ui:1.4.1")

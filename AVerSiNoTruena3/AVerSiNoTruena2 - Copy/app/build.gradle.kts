@@ -77,6 +77,7 @@ dependencies {
     implementation( "androidx.media3:media3-ui:1.4.1")
     implementation( "androidx.media3:media3-datasource-okhttp:1.4.1")
 
+    implementation ("com.google.code.gson:gson:2.8.2")
 
 
     //implementation("androidx.media3:media3-common-ktx:1.4.1")

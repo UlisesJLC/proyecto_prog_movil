@@ -11,12 +11,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.WorkManager
 import com.example.inventory.data.Alarm
 import com.example.inventory.data.AlarmRepository
-import com.example.inventory.data.OfflineAlarmsRepository
 import com.example.inventory.data.TasksRepository
+import com.google.common.reflect.TypeToken
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
+
 //import kotlin.coroutines.jvm.internal.CompletedContinuation.context
 
 /**
@@ -26,7 +28,7 @@ class TaskEditViewModel(
     savedStateHandle: SavedStateHandle,
     private val tasksRepository: TasksRepository,
     private val alarmsRepository: AlarmRepository,
-    private val workManager: WorkManager // Agregar WorkManager aquí
+    private val workManager: WorkManager
 ) : ViewModel() {
 
     var taskUiState by mutableStateOf(TaskUiState())
@@ -35,35 +37,38 @@ class TaskEditViewModel(
     var alarmsUiState by mutableStateOf<List<Alarm>>(emptyList())
         private set
 
+    // Variables temporales para multimedia
+    var tempImageUris by mutableStateOf(listOf<String>())
+        private set
+    var tempVideoUris by mutableStateOf(listOf<String>())
+        private set
+
     private val taskId: Int = checkNotNull(savedStateHandle[TaskEditDestination.taskIdArg])
 
     init {
         viewModelScope.launch {
             // Cargar datos de la tarea
-            taskUiState = tasksRepository.getTaskStream(taskId)
+            val task = tasksRepository.getTaskStream(taskId)
                 .filterNotNull()
                 .first()
-                .toTaskUiState()
+
+            taskUiState = task.toTaskUiState()
+
+            // Inicializar URIs temporales con los valores actuales de la tarea
+            tempImageUris = Gson().fromJson(
+                task.fotoUri ?: "[]",
+                object : TypeToken<MutableList<String>>() {}.type
+            )
+            tempVideoUris = Gson().fromJson(
+                task.videoUri ?: "[]",
+                object : TypeToken<MutableList<String>>() {}.type
+            )
 
             // Cargar alarmas asociadas a la tarea
             alarmsRepository.getAlarmsByTaskId(taskId).collect { alarms ->
-                Log.d("TaskEditViewModel", "Loaded alarms for taskId $taskId: $alarms")
                 alarmsUiState = alarms
             }
         }
-    }
-
-    suspend fun updateTask() {
-        if (validateInput(taskUiState.taskDetails)) {
-            tasksRepository.updateTask(taskUiState.taskDetails.toTask())
-        }
-    }
-
-    fun updateUiState(taskDetails: TaskDetails) {
-        taskUiState = TaskUiState(
-            taskDetails = taskDetails,
-            isEntryValid = validateInput(taskDetails)
-        )
     }
 
     fun addAlarm(alarm: Alarm) {
@@ -94,6 +99,41 @@ class TaskEditViewModel(
     }
 
 
+    fun addTempImageUri(uri: String) {
+        tempImageUris = tempImageUris + uri
+    }
+
+    fun addTempVideoUri(uri: String) {
+        tempVideoUris = tempVideoUris + uri
+    }
+
+    fun removeTempImageUri(uri: String) {
+        tempImageUris = tempImageUris - uri
+    }
+
+    fun removeTempVideoUri(uri: String) {
+        tempVideoUris = tempVideoUris - uri
+    }
+
+
+
+    suspend fun updateTask() {
+        if (validateInput(taskUiState.taskDetails)) {
+            // Actualiza las listas persistentes con las listas temporales al guardar
+            val updatedTaskDetails = taskUiState.taskDetails.copy(
+                fotoUri = Gson().toJson(tempImageUris),
+                videoUri = Gson().toJson(tempVideoUris)
+            )
+            tasksRepository.updateTask(updatedTaskDetails.toTask())
+        }
+    }
+
+    fun updateUiState(taskDetails: TaskDetails) {
+        taskUiState = TaskUiState(
+            taskDetails = taskDetails,
+            isEntryValid = validateInput(taskDetails)
+        )
+    }
 
     private fun validateInput(uiState: TaskDetails = taskUiState.taskDetails): Boolean {
         return with(uiState) {

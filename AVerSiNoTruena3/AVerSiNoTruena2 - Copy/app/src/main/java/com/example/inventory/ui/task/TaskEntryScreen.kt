@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -56,11 +55,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import coil.compose.AsyncImage
 import com.example.inventory.ComposeFileProvider
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
-import com.example.inventory.VideoPlayer
 import com.example.inventory.data.Task
 import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
@@ -91,6 +88,8 @@ fun TaskEntryScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+
+
 
     Scaffold(
         topBar = {
@@ -171,6 +170,8 @@ fun TaskEntryScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .fillMaxWidth()
+            ,
+            viewModel = viewModel
         )
     }
 }
@@ -181,8 +182,11 @@ fun TaskEntryBody(
     onTaskValueChange: (TaskDetails) -> Unit,
     onSaveClick: () -> Unit,
     onAddAlarmClick: () -> Unit,
+    viewModel: TaskEntryViewModel, // Agregar este parámetro,
     modifier: Modifier = Modifier
 ) {
+    val photoUris = viewModel.getPhotoUris()
+    val videoUris = viewModel.getVideoUris()
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
@@ -210,16 +214,28 @@ fun TaskEntryBody(
         ) {
             Text(text = stringResource(R.string.add_alarm))
         }
-        buttonTakePhoto()
-        buttonTakeVideo()
+        buttonTakePhoto(viewModel = viewModel)
+        buttonTakeVideo(viewModel = viewModel)
+        // Vista previa de fotos y videos
+        if (photoUris.isNotEmpty() || videoUris.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.multimedia),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            MultimediaViewer(photoUris = photoUris, videoUris = videoUris, onRemovePhoto = { uri -> viewModel.removePhotoUri(uri) },
+                onRemoveVideo = { uri -> viewModel.removeVideoUri(uri) },showRemoveButtons = true)
+        }
+
+
     }
 }
 
 @Composable
 fun TaskInputForm(
     taskDetails: TaskDetails,
+    onValueChange: (TaskDetails) -> Unit,
     modifier: Modifier = Modifier,
-    onValueChange: (TaskDetails) -> Unit = {},
     enabled: Boolean = true
 ) {
     var selectedDate by remember { mutableStateOf(taskDetails.fechaHoraVencimiento ?: "") }
@@ -246,8 +262,11 @@ fun TaskInputForm(
             singleLine = true
         )
 
+
         // Selector de fecha y hora
         OutlinedTextField(
+
+
             value = selectedDate,
             onValueChange = { /* Evitar edición manual */ },
             label = { Text(stringResource(R.string.task_due_time)) },
@@ -271,6 +290,7 @@ fun TaskInputForm(
         )
     }
 }
+
 
 
 fun calculateDelay(dateTime: String): Long {
@@ -316,152 +336,70 @@ fun showTimePicker(context: Context, onTimeSelected: (String) -> Unit) {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun buttonTakePhoto(){
-    val cameraPermissionState = rememberPermissionState(
-        permission = Manifest.permission.CAMERA
-    )
-    var uri : Uri? = null
-    // 1
-    var hasImage by remember {
-        mutableStateOf(false)
-    }
-    var hasVideo by remember {
-        mutableStateOf(false)
-    }
-    // 2
-    var imageUri by remember {
-        mutableStateOf<Uri?>(null)
-    }
+fun buttonTakePhoto(viewModel: TaskEntryViewModel) {
+    val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+    val context = LocalContext.current
+    var uri by remember { mutableStateOf<Uri?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
-            Log.d("IMG", hasImage.toString())
-            Log.d("URI", imageUri.toString())
-            if(success) imageUri = uri
-            hasImage = success
+            Log.d("buttonTakePhoto", "Camera result: $success, URI: $uri")
+            if (success && uri != null) {
+                viewModel.addImageUri(uri!!)
+                Log.d("buttonTakePhoto", "Added URI to ViewModel: $uri")
+            }
         }
     )
 
-
-    val context = LocalContext.current
-    if ((hasImage or hasVideo) && imageUri != null) {
-        // 5
-        if(hasImage){
-            AsyncImage(
-                model = imageUri,
-                modifier = Modifier.size(100.dp),
-                contentDescription = "Selected image",
-            )
-        }
-        if(hasVideo) {VideoPlayer(videoUri = imageUri!!)}
-    }
     Button(
-        modifier = Modifier.padding(top = 16.dp),
         onClick = {
-            if ((cameraPermissionState.status.isGranted)) {
-                uri = ComposeFileProvider.getImageUri(context) // uri guarda la direccion de la imagen
-                //imageUri = uri
-                cameraLauncher.launch(uri!!)
-
+            if (cameraPermissionState.status.isGranted) {
+                uri = ComposeFileProvider.getImageUri(context)
+                Log.d("buttonTakePhoto", "Generated URI: $uri")
+                cameraLauncher.launch(uri)
             } else {
-                // El permiso no está concedido, solicítalo
                 cameraPermissionState.launchPermissionRequest()
-                try {
-                    cameraLauncher.launch(uri!!)
-                }catch (e: Exception){}
             }
-        },
+        }
     ) {
-        Text(
-            text = "Tomar photo"
-        )
+        Text("Tomar foto")
     }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun buttonTakeVideo(){
-    val cameraPermissionState = rememberPermissionState(
-        permission = Manifest.permission.CAMERA
-    )
-    var uri : Uri? = null
-    // 1
-    var hasImage by remember {
-        mutableStateOf(false)
-    }
-    var hasVideo by remember {
-        mutableStateOf(false)
-    }
-    // 2
-    var imageUri by remember {
-        mutableStateOf<Uri?>(null)
-    }
-
-
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            // TODO
-            // 3
-            Log.d("TXT", uri.toString())
-            hasImage = uri != null
-            imageUri = uri
-        }
-    )
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture(),
-        onResult = { success ->
-            Log.d("IMG", hasImage.toString())
-            Log.d("URI", imageUri.toString())
-            if(success) imageUri = uri
-            hasImage = success
-        }
-    )
+fun buttonTakeVideo(viewModel: TaskEntryViewModel) {
+    val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+    val context = LocalContext.current
+    var uri by remember { mutableStateOf<Uri?>(null) }
 
     val videoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CaptureVideo(),
         onResult = { success ->
-            hasVideo = success
+            Log.d("buttonTakeVideo", "Video result: $success, URI: $uri")
+            if (success && uri != null) {
+                viewModel.addVideoUri(uri!!)
+                Log.d("buttonTakeVideo", "Added URI to ViewModel: $uri")
+            }
         }
     )
 
-    val context = LocalContext.current
-    if ((hasImage or hasVideo) && imageUri != null) {
-        // 5
-        if(hasImage){
-            AsyncImage(
-                model = imageUri,
-                modifier = Modifier.size(100.dp),
-                contentDescription = "Selected image",
-            )
-        }
-        if(hasVideo) {VideoPlayer(videoUri = imageUri!!)}
-    }
     Button(
-        modifier = Modifier.padding(top = 16.dp),
         onClick = {
-            if ((cameraPermissionState.status.isGranted)) {
-                val uri = ComposeFileProvider.getImageUri(context)
+            if (cameraPermissionState.status.isGranted) {
+                uri = ComposeFileProvider.getVideoUri(context)
+                Log.d("buttonTakeVideo", "Generated URI: $uri")
                 videoLauncher.launch(uri)
-                imageUri = uri
-
             } else {
-                // El permiso no está concedido, solicítalo
                 cameraPermissionState.launchPermissionRequest()
-                try {
-                    cameraLauncher.launch(uri!!)
-                }catch (e: Exception){}
             }
-        },
+        }
     ) {
-
-        Text(
-            text = "Tomar video"
-        )
+        Text("Tomar video")
     }
 }
+
 
 
 

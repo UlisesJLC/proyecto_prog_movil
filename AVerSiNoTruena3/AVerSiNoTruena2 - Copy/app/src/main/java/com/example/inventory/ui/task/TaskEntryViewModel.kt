@@ -1,5 +1,7 @@
 package com.example.inventory.ui.task
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,6 +10,7 @@ import com.example.inventory.data.Alarm
 import com.example.inventory.data.AlarmRepository
 import com.example.inventory.data.Task
 import com.example.inventory.data.TasksRepository
+import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import java.util.UUID
 
@@ -17,25 +20,69 @@ class TaskEntryViewModel(
     private val alarmsRepository: AlarmRepository
 ) : ViewModel() {
 
-    // Lista temporal de URIs
+    // Listas temporales de URIs
     private val imageUris = mutableListOf<String>()
+    private val videoUris = mutableListOf<String>()
 
-    fun addImageUri(uri: String) {
-        imageUris.add(uri)
-        updatePhotoUrisInUiState()
+    fun addImageUri(uri: Uri) {
+        imageUris.add(uri.toString())
+        Log.d("TaskEntryViewModel", "Added Image URI: $uri")
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                fotoUri = Gson().toJson(imageUris) // Serializar los URI actualizados
+            )
+        )
     }
 
-    fun removeImageUri(uri: String) {
-        imageUris.remove(uri)
-        updatePhotoUrisInUiState()
+    fun addVideoUri(uri: Uri) {
+        videoUris.add(uri.toString())
+        Log.d("TaskEntryViewModel", "Added Video URI: $uri")
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                videoUri = Gson().toJson(videoUris) // Serializar los URI actualizados
+            )
+        )
     }
+
 
     private fun updatePhotoUrisInUiState() {
         val serializedUris = Gson().toJson(imageUris)
+        Log.d("TaskEntryViewModel", "Serialized Photo URIs: $serializedUris")
         updateUiState(
             taskUiState.taskDetails.copy(fotoUri = serializedUris)
         )
     }
+
+    private fun updateVideoUrisInUiState() {
+        val serializedUris = Gson().toJson(videoUris)
+        Log.d("TaskEntryViewModel", "Serialized Video URIs: $serializedUris")
+        updateUiState(
+            taskUiState.taskDetails.copy(videoUri = serializedUris)
+        )
+    }
+
+
+
+    fun removePhotoUri(uri: String) {
+        imageUris.remove(uri)
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                fotoUri = Gson().toJson(imageUris) // Actualiza las URIs serializadas
+            )
+        )
+        Log.d("TaskEntryViewModel", "Removed Photo URI: $uri")
+    }
+
+    fun removeVideoUri(uri: String) {
+        videoUris.remove(uri)
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                videoUri = Gson().toJson(videoUris) // Actualiza las URIs serializadas
+            )
+        )
+        Log.d("TaskEntryViewModel", "Removed Video URI: $uri")
+    }
+
 
 
     var taskUiState by mutableStateOf(TaskUiState())
@@ -50,8 +97,19 @@ class TaskEntryViewModel(
 
     suspend fun saveTask() {
         if (validateInput()) {
-            tasksRepository.insertTask(taskUiState.taskDetails.toTask())
+            val serializedImageUris = Gson().toJson(imageUris)
+            val serializedVideoUris = Gson().toJson(videoUris)
 
+            Log.d("TaskEntryViewModel", "Saving Task with Photo URIs: $serializedImageUris")
+            Log.d("TaskEntryViewModel", "Saving Task with Video URIs: $serializedVideoUris")
+
+            val task = taskUiState.taskDetails.copy(
+                fotoUri = serializedImageUris,
+                videoUri = serializedVideoUris
+            ).toTask()
+
+            tasksRepository.insertTask(task)
+            Log.d("TaskEntryViewModel", "Task saved: $task")
         }
     }
 
@@ -66,12 +124,38 @@ class TaskEntryViewModel(
         alarmsRepository.insertAlarm(alarm)
     }
 
+
+
+
     private fun validateInput(uiState: TaskDetails = taskUiState.taskDetails): Boolean {
         return with(uiState) {
             titulo.isNotBlank() && descripcion.isNotBlank()
         }
     }
+
+
+
+    fun getPhotoUris(): List<String> {
+        val fotoUri = taskUiState.taskDetails.fotoUri
+        return if (!fotoUri.isNullOrBlank()) {
+            Gson().fromJson(fotoUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    fun getVideoUris(): List<String> {
+        val videoUri = taskUiState.taskDetails.videoUri
+        return if (!videoUri.isNullOrBlank()) {
+            Gson().fromJson(videoUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+
 }
+
 
 data class TaskUiState(
     val taskDetails: TaskDetails = TaskDetails(),
@@ -84,7 +168,8 @@ data class TaskDetails(
     val descripcion: String = "",
     val fechaHoraVencimiento: String? = null,
     val estado: Boolean = false,
-    val fotoUri: String? = null // Serializado como JSON
+    val fotoUri: String? = null, // Serializado como JSON
+    val videoUri: String? = null // Serializado como JSON
 )
 
 fun TaskDetails.toTask(): Task = Task(
@@ -92,7 +177,9 @@ fun TaskDetails.toTask(): Task = Task(
     titulo = titulo,
     descripcion = descripcion,
     fechaHoraVencimiento = fechaHoraVencimiento ?: "", // Valor predeterminado si es nulo
-    estado = estado
+    estado = estado,
+    fotoUri = fotoUri, // Agregar esta línea
+    videoUri = videoUri // Agregar esta línea
 )
 
 

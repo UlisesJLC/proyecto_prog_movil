@@ -1,10 +1,16 @@
 package com.example.inventory.ui.task
 
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.inventory.data.TasksRepository
 import com.example.inventory.data.Task
+import com.example.inventory.data.TasksRepository
+import com.google.common.reflect.TypeToken
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -18,6 +24,9 @@ class TaskDetailsViewModel(
 ) : ViewModel() {
 
     private val taskId: Int = checkNotNull(savedStateHandle[TaskDetailsDestination.taskIdArg])
+    // Listas temporales de URIs
+    private val imageUris = mutableListOf<String>()
+    private val videoUris = mutableListOf<String>()
 
     val uiState: StateFlow<TaskDetailsUiState> =
         tasksRepository.getTaskStream(taskId)
@@ -48,6 +57,67 @@ class TaskDetailsViewModel(
         }
     }
 
+    fun getPhotoUris(): List<String> {
+        val fotoUri = uiState.value.taskDetails.fotoUri
+        return if (!fotoUri.isNullOrBlank()) {
+            Gson().fromJson(fotoUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    fun getVideoUris(): List<String> {
+        val videoUri = uiState.value.taskDetails.videoUri
+        return if (!videoUri.isNullOrBlank()) {
+            Gson().fromJson(videoUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    fun removePhotoUri(uri: String) {
+        imageUris.remove(uri)
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                fotoUri = Gson().toJson(imageUris) // Actualiza las URIs serializadas
+            )
+        )
+        Log.d("TaskEntryViewModel", "Removed Photo URI: $uri")
+    }
+
+    fun removeVideoUri(uri: String) {
+        videoUris.remove(uri)
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                videoUri = Gson().toJson(videoUris) // Actualiza las URIs serializadas
+            )
+        )
+        Log.d("TaskEntryViewModel", "Removed Video URI: $uri")
+    }
+
+    var taskUiState by mutableStateOf(TaskUiState())
+        private set
+
+    fun updateUiState(taskDetails: TaskDetails) {
+        taskUiState = TaskUiState(
+            taskDetails = taskDetails,
+            isEntryValid = validateInput(taskDetails)
+        )
+    }
+    private fun validateInput(uiState: TaskDetails = taskUiState.taskDetails): Boolean {
+        return with(uiState) {
+            titulo.isNotBlank() && descripcion.isNotBlank()
+        }
+    }
+
+
+
+
+
+
+
+
+
     companion object {
         private const val TIMEOUT_MILLIS = 5_000L
     }
@@ -63,7 +133,9 @@ data class TaskDetailsInfo(
     val titulo: String = "",
     val descripcion: String = "",
     val fechaHoraVencimiento: String? = null,
-    val estado: Boolean = false
+    val estado: Boolean = false,
+    val fotoUri: String? = null, // Serializado como JSON
+    val videoUri: String? = null // Serializado como JSON
 )
 
 fun Task.toTaskDetailsInfo(): TaskDetailsInfo = TaskDetailsInfo(
@@ -71,8 +143,11 @@ fun Task.toTaskDetailsInfo(): TaskDetailsInfo = TaskDetailsInfo(
     titulo = this.titulo,
     descripcion = this.descripcion,
     fechaHoraVencimiento = this.fechaHoraVencimiento,
-    estado = this.estado
+    estado = this.estado,
+    fotoUri = this.fotoUri, // Asegúrate de asignar este campo
+    videoUri = this.videoUri // Asegúrate de asignar este campo
 )
+
 
 fun TaskDetailsInfo.toTask(): Task = Task(
     id = this.id,

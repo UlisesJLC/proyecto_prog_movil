@@ -28,7 +28,7 @@ data class Item(
     val id: Int = 0,
     val titulo: String,
     val descripcion: String,
-    val clasificacion: String, // Puede ser "nota" o "tarea"
+    val clasificacion: String? = null, // Puede ser "nota" o "tarea"
     val horaCumplimiento: Long? = null, // Guarda la fecha y hora de la tarea en milisegundos, si es tarea
     val estado: Boolean = false, // true si la tarea está cumplida, false si no
 

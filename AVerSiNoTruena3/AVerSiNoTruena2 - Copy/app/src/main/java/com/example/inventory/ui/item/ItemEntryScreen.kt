@@ -16,10 +16,17 @@
 
 package com.example.inventory.ui.item
 
+import android.Manifest
 import android.R.attr.value
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,11 +36,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -53,7 +65,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -62,11 +76,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import com.example.inventory.ComposeFileProvider
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
 import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -106,6 +125,9 @@ fun ItemEntryScreen(
                     navigateBack()
                 }
             },
+            onRemovePhoto = { uri -> viewModel.removePhoto(uri) },
+            onRemoveVideo = { uri -> viewModel.removeVideo(uri) },
+            onRemoveAudio = { uri -> viewModel.removeAudio(uri) },
             modifier = Modifier
                 .padding(
                     start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
@@ -113,46 +135,60 @@ fun ItemEntryScreen(
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
                 )
                 .verticalScroll(rememberScrollState())
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            viewModel = viewModel
         )
     }
 }
+
 
 @Composable
 fun ItemEntryBody(
     itemUiState: ItemUiState,
     onItemValueChange: (ItemDetails) -> Unit,
     onSaveClick: () -> Unit,
+    onRemovePhoto: (String) -> Unit,
+    onRemoveVideo: (String) -> Unit,
+    onRemoveAudio: (String) -> Unit,
+    viewModel: ItemEntryViewModel,
     modifier: Modifier = Modifier
 ) {
+    val tempPhotoUris = viewModel.tempPhotoUris
+    val tempVideoUris = viewModel.tempVideoUris
+    val tempAudioUris = viewModel.tempAudioUris
+
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
     ) {
+        // Formulario de entrada de datos
         ItemInputForm(
             itemDetails = itemUiState.itemDetails,
             onValueChange = onItemValueChange,
             modifier = Modifier.fillMaxWidth()
         )
-        // Add buttons for multimedia input
-        Button(
-            onClick = { /* TODO: Add logic to pick a video */ },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Add Video")
+
+        // Captura de multimedia: fotos y videos
+        buttonTakePhoto(onPhotoCaptured = { uri -> viewModel.addTempImageUri(uri) })
+        buttonTakeVideo(onVideoCaptured = { uri -> viewModel.addTempVideoUri(uri) })
+
+        // Mostrar multimedia con opciones para eliminar
+        if (tempPhotoUris.isNotEmpty() || tempVideoUris.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.multimedia),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            MultimediaViewers(
+                photoUris = tempPhotoUris,
+                videoUris = tempVideoUris,
+                audioUris = tempAudioUris,
+                onRemovePhoto = onRemovePhoto,
+                onRemoveVideo = onRemoveVideo,
+                showRemoveButtons = true
+            )
         }
-        Button(
-            onClick = { /* TODO: Add logic to pick a photo */ },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Add Photo")
-        }
-        Button(
-            onClick = { /* TODO: Add logic to pick an audio */ },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Add Audio")
-        }
+
         Button(
             onClick = onSaveClick,
             enabled = itemUiState.isEntryValid,
@@ -163,7 +199,6 @@ fun ItemEntryBody(
         }
     }
 }
-
 
 @Composable
 fun ItemInputForm(
@@ -194,101 +229,192 @@ fun ItemInputForm(
             enabled = enabled,
             singleLine = true
         )
-        OutlinedTextField(
-            value = itemDetails.clasificacion,
-            onValueChange = { onValueChange(itemDetails.copy(clasificacion = it)) },
-            label = { Text("Nota") },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = enabled,
-            singleLine = true
-        )
 
-        /*OutlinedTextField(
-            value = itemDetails.horaCumplimiento?.toString() ?: "",
-            onValueChange = { onValueChange(itemDetails.copy(horaCumplimiento = it.toLongOrNull())) },
-            label = { Text(stringResource(R.string.item_due_time)) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = enabled,
-            singleLine = true
-        )*/
-        DatePickerModal({},itemDetails=itemDetails,onValueChange=onValueChange)
+
     }
 }
 
-@Preview(showBackground = true)
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-private fun ItemEntryScreenPreview() {
-    InventoryTheme {
-        ItemEntryBody(
-            itemUiState = ItemUiState(
-                itemDetails = ItemDetails(
-                    titulo = "Título de ejemplo",
-                    descripcion = "Descripción de ejemplo",
-                    clasificacion = "nota",
-                    horaCumplimiento = System.currentTimeMillis()
-                )
-            ),
-            onItemValueChange = {},
-            onSaveClick = {}
-        )
-    }
-}
-@OptIn(ExperimentalMaterial3Api::class)
+fun buttonTakePhoto(onPhotoCaptured: (String) -> Unit) {
+    val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+    val context = LocalContext.current
+    var uri by remember { mutableStateOf<Uri?>(null) }
 
-@Composable
-fun DatePickerModal(
-    onDateSelected: (Long?) -> Unit,
-    itemDetails: ItemDetails,
-    onValueChange: (ItemDetails) -> Unit = {}
-    //onValueChange:()->Unit
-) {
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success && uri != null) {
+                onPhotoCaptured(uri.toString())
+            }
+        }
+    )
 
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
-    val selectedDate = datePickerState.selectedDateMillis?.let {
-        convertMillisToDate(it)
-    } ?: ""
-    OutlinedTextField(
-        value = itemDetails.horaCumplimiento?.toString() ?: selectedDate,
-        onValueChange = { onValueChange(itemDetails.copy(horaCumplimiento = datePickerState.selectedDateMillis)) },
-        label = { Text(itemDetails.horaCumplimiento?.toString() ?: selectedDate) },
-        readOnly = true,
-        trailingIcon = {
-            IconButton(onClick = { showDatePicker = !showDatePicker }) {
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = "Select date"
-                )
+    Button(
+        onClick = {
+            if (cameraPermissionState.status.isGranted) {
+                uri = ComposeFileProvider.getImageUri(context)
+                cameraLauncher.launch(uri)
+            } else {
+                cameraPermissionState.launchPermissionRequest()
             }
         },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Capturar Foto")
+    }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun buttonTakeVideo(onVideoCaptured: (String) -> Unit) {
+    val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+    val context = LocalContext.current
+    var uri by remember { mutableStateOf<Uri?>(null) }
+
+    val videoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo(),
+        onResult = { success ->
+            if (success && uri != null) {
+                onVideoCaptured(uri.toString())
+            }
+        }
     )
-    if(showDatePicker){
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker=false },
-            confirmButton = {
-                TextButton(onClick = {
-                    onDateSelected(datePickerState.selectedDateMillis)
-                    showDatePicker=false
-                }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {showDatePicker=false}) {
-                    Text("Cancel")
+
+    Button(
+        onClick = {
+            if (cameraPermissionState.status.isGranted) {
+                uri = ComposeFileProvider.getVideoUri(context)
+                videoLauncher.launch(uri)
+            } else {
+                cameraPermissionState.launchPermissionRequest()
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Grabar Video")
+    }
+}
+
+@Composable
+fun buttonPickAudio(onAudioPicked: (String) -> Unit) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                onAudioPicked(uri.toString())
+            }
+        }
+    )
+
+    Button(
+        onClick = { launcher.launch("audio/*") },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Seleccionar Audio")
+    }
+}
+
+
+
+
+@Composable
+fun MultimediaViewers(
+    photoUris: List<String>,
+    videoUris: List<String>,
+    audioUris: List<String>,
+    onRemovePhoto: (String) -> Unit = {},
+    onRemoveVideo: (String) -> Unit = {},
+    onRemoveAudio: (String) -> Unit = {},
+    showRemoveButtons: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    LazyRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_small))
+    ) {
+        // Mostrar imágenes
+        items(photoUris.size) { index ->
+            val uri = photoUris[index]
+            Box(modifier = Modifier.size(100.dp)) {
+                Image(
+                    painter = rememberAsyncImagePainter(uri),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                )
+                if (showRemoveButtons) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .clickable { onRemovePhoto(uri) },
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
-        ) {
-            DatePicker(state = datePickerState)
+        }
+
+        // Mostrar videos
+        items(videoUris.size) { index ->
+            val uri = videoUris[index]
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.video),
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                if (showRemoveButtons) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .clickable { onRemoveVideo(uri) },
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        // Mostrar audios
+        items(audioUris.size) { index ->
+            val uri = audioUris[index]
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.audio),
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                if (showRemoveButtons) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .clickable { onRemoveAudio(uri) },
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
     }
-
 }
 
-fun convertMillisToDate(millis: Long): String {
-    val formatter = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
-    return formatter.format(Date(millis))
-}
+
+
+
+

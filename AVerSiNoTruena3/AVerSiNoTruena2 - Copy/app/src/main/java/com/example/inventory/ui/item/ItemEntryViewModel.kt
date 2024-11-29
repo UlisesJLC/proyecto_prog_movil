@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.inventory.data.Item
 import com.example.inventory.data.ItemsRepository
+import com.google.gson.Gson
 import java.text.NumberFormat
 
 /**
@@ -29,16 +30,17 @@ import java.text.NumberFormat
  */
 class ItemEntryViewModel(private val itemsRepository: ItemsRepository) : ViewModel() {
 
-    /**
-     * Mantiene el estado actual del item en la UI.
-     */
     var itemUiState by mutableStateOf(ItemUiState())
         private set
 
-    /**
-     * Actualiza el [itemUiState] con el valor proporcionado en el argumento. Este método también activa
-     * una validación para los valores de entrada.
-     */
+    // Listas temporales de multimedia
+    var tempPhotoUris by mutableStateOf(listOf<String>())
+        private set
+    var tempVideoUris by mutableStateOf(listOf<String>())
+        private set
+    var tempAudioUris by mutableStateOf(listOf<String>())
+        private set
+
     fun updateUiState(itemDetails: ItemDetails) {
         itemUiState = ItemUiState(
             itemDetails = itemDetails,
@@ -46,24 +48,46 @@ class ItemEntryViewModel(private val itemsRepository: ItemsRepository) : ViewMod
         )
     }
 
-    /**
-     * Inserta un [Item] en la base de datos Room.
-     */
+    fun addTempImageUri(uri: String) {
+        tempPhotoUris = tempPhotoUris + uri
+    }
+
+    fun addTempVideoUri(uri: String) {
+        tempVideoUris = tempVideoUris + uri
+    }
+
+    // Métodos para eliminar multimedia
+    fun removePhoto(uri: String) {
+        tempPhotoUris = tempPhotoUris - uri
+    }
+
+    fun removeVideo(uri: String) {
+        tempVideoUris = tempVideoUris - uri
+    }
+
+    fun removeAudio(uri: String) {
+        tempAudioUris = tempAudioUris - uri
+    }
+
+
     suspend fun saveItem() {
         if (validateInput()) {
-            itemsRepository.insertItem(itemUiState.itemDetails.toItem())
+            val updatedItemDetails = itemUiState.itemDetails.copy(
+                fotoUri = Gson().toJson(tempPhotoUris),
+                videoUri = Gson().toJson(tempVideoUris),
+                audioUri = Gson().toJson(tempAudioUris)
+            )
+            itemsRepository.insertItem(updatedItemDetails.toItem())
         }
     }
 
-    /**
-     * Valida los campos obligatorios del item.
-     */
     private fun validateInput(uiState: ItemDetails = itemUiState.itemDetails): Boolean {
         return with(uiState) {
-            titulo.isNotBlank() && descripcion.isNotBlank() && clasificacion.isNotBlank()
+            titulo.isNotBlank() && descripcion.isNotBlank()
         }
     }
 }
+
 
 /**
  * Representa el estado de la UI para un Item.
@@ -91,7 +115,7 @@ data class ItemDetails(
     val id: Int = 0,
     val titulo: String = "",
     val descripcion: String = "",
-    val clasificacion: String = "",
+    val clasificacion: String? = null,
     val horaCumplimiento: Long? = null,
     val estado: Boolean = false,
     val videoUri: String? = null, // Added field

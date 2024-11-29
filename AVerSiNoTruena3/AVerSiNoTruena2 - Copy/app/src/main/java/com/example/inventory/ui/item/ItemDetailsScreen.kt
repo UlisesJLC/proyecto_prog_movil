@@ -16,8 +16,15 @@
 
 package com.example.inventory.ui.item
 
+import android.util.Log
+import android.widget.VideoView
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,10 +35,14 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -51,13 +62,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
 import com.example.inventory.data.Item
@@ -65,6 +81,10 @@ import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
 import kotlinx.coroutines.launch
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
+
 
 object ItemDetailsDestination : NavigationDestination {
     override val route = "item_details"
@@ -129,38 +149,59 @@ fun ItemDetailsScreen(
                     top = innerPadding.calculateTopPadding(),
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
                 )
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            viewModel = viewModel
         )
     }
 }
 
-
 @Composable
 private fun ItemDetailsBody(
     itemDetailsUiState: ItemDetailsUiState,
-    onCompleteItem: () -> Unit, // Cambiado de onSellItem a onCompleteItem
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    onCompleteItem: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ItemDetailsViewModel
 ) {
+    val photoUris = viewModel.getPhotoUris()
+    val videoUris = viewModel.getVideoUris()
+    val audioUris = viewModel.getAudioUris()
+
+    // Estado para el contenido multimedia seleccionado
+    var selectedMediaUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedMediaType by rememberSaveable { mutableStateOf<MediaType?>(null) }
+
+    // Logs para verificar las listas
+    Log.d("ItemDetailsBody", "Photo URIs: $photoUris")
+    Log.d("ItemDetailsBody", "Video URIs: $videoUris")
+    Log.d("ItemDetailsBody", "Audio URIs: $audioUris")
+
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_medium))
     ) {
         var deleteConfirmationRequired by rememberSaveable { mutableStateOf(false) }
+
         ItemDetails(
             item = itemDetailsUiState.itemDetails.toItem(),
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Agregar un botón de completar solo si es una tarea
-        if (itemDetailsUiState.isTask && !itemDetailsUiState.isCompleted) {
-            Button(
-                onClick = onCompleteItem, // Ahora usa onCompleteItem
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.small
-            ) {
-                Text(stringResource(R.string.complete_task))
-            }
+        if (photoUris.isNotEmpty() || videoUris.isNotEmpty() || audioUris.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.multimedia),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            MultimediaViewer(
+                photoUris = photoUris,
+                videoUris = videoUris,
+                audioUris = audioUris,
+                onMediaClick = { uri, type ->
+                    selectedMediaUri = uri
+                    selectedMediaType = type
+                }
+            )
         }
 
         OutlinedButton(
@@ -170,6 +211,7 @@ private fun ItemDetailsBody(
         ) {
             Text(stringResource(R.string.delete))
         }
+
         if (deleteConfirmationRequired) {
             DeleteConfirmationDialog(
                 onDeleteConfirm = {
@@ -181,7 +223,143 @@ private fun ItemDetailsBody(
             )
         }
     }
+
+    // Mostrar el contenido multimedia seleccionado en un Dialog
+    selectedMediaUri?.let { uri ->
+        when (selectedMediaType) {
+            MediaType.IMAGE -> FullscreenImageDialog(uri = uri, onDismiss = { selectedMediaUri = null })
+            MediaType.VIDEO -> FullscreenVideoDialog(uri = uri, onDismiss = { selectedMediaUri = null })
+            MediaType.AUDIO -> FullscreenAudioDialog(uri = uri, onDismiss = { selectedMediaUri = null })
+            else -> {}
+        }
+    }
 }
+
+enum class MediaType {
+    IMAGE, VIDEO, AUDIO
+}
+
+@Composable
+fun MultimediaViewer(
+    photoUris: List<String>,
+    videoUris: List<String>,
+    audioUris: List<String>,
+    onMediaClick: (String, MediaType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_small))
+    ) {
+        // Mostrar imágenes
+        items(photoUris.size) { index ->
+            val uri = photoUris[index]
+            Box(modifier = Modifier.size(100.dp)) {
+                Image(
+                    painter = rememberAsyncImagePainter(uri),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                        .clickable { onMediaClick(uri, MediaType.IMAGE) }
+                )
+            }
+        }
+
+        // Mostrar videos
+        items(videoUris.size) { index ->
+            val uri = videoUris[index]
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { onMediaClick(uri, MediaType.VIDEO) }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.video),
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
+
+        // Mostrar audios
+        items(audioUris.size) { index ->
+            val uri = audioUris[index]
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .clickable { onMediaClick(uri, MediaType.AUDIO) }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.audio),
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FullscreenImageDialog(uri: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        modifier = Modifier.padding(16.dp),
+        text = {
+            Image(
+                painter = rememberAsyncImagePainter(uri),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        }
+    )
+}
+
+@Composable
+fun FullscreenVideoDialog(uri: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        modifier = Modifier.padding(16.dp),
+        text = {
+            AndroidView(
+                factory = { context ->
+                    VideoView(context).apply {
+                        setVideoURI(android.net.Uri.parse(uri))
+                        setOnPreparedListener { it.start() } // Inicia el video automáticamente
+                        setOnCompletionListener { onDismiss() } // Cierra el dialog al terminar
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+            )
+        }
+    )
+}
+
+
+@Composable
+fun FullscreenAudioDialog(uri: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        modifier = Modifier.padding(16.dp),
+        text = {
+            Text("Audio playback not implemented. URI: $uri")
+        }
+    )
+}
+
 
 
 @Composable
@@ -211,46 +389,13 @@ fun ItemDetails(
                 itemDetail = item.descripcion,
                 modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
             )
-            ItemDetailsRow(
-                labelResID = R.string.item_classification,
-                itemDetail = item.clasificacion,
-                modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
-            )
-            if (item.clasificacion == "tarea" && item.horaCumplimiento != null) {
-                ItemDetailsRow(
-                    labelResID = R.string.task_due_time,
-                    itemDetail = item.horaCumplimiento.toString(),
-                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
-                )
-            }
+
             ItemDetailsRow(
                 labelResID = R.string.item_status,
                 itemDetail = if (item.estado) "Cumplida" else "Pendiente",
                 modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
             )
-            // Display multimedia fields if available
-            item.videoUri?.let {
-                ItemDetailsRow(
-                    labelResID = R.string.item_video,
-                    itemDetail = it,
-                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
-                )
-            }
-            item.fotoUri?.let {
-                ItemDetailsRow(
-                    labelResID = R.string.item_photo,
-                    itemDetail = it,
-                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
-                )
-            }
-            item.audioUri?.let {
-                ItemDetailsRow(
-                    //labelResID = R.string.item_audio,
-                    labelResID = R.string.item_audio,
-                    itemDetail = it,
-                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_medium))
-                )
-            }
+
         }
     }
 }
@@ -288,28 +433,4 @@ private fun DeleteConfirmationDialog(
         }
     )
 }
-
-@Preview(showBackground = true)
-@Composable
-fun ItemDetailsScreenPreview() {
-    InventoryTheme {
-        ItemDetailsBody(
-            itemDetailsUiState = ItemDetailsUiState(
-                isTask = true, // Ajustado para reflejar que es una tarea
-                isCompleted = false, // Ejemplo: la tarea aún no está completada
-                itemDetails = ItemDetails(
-                    id = 1,
-                    titulo = "Ejemplo Titulo",
-                    descripcion = "Ejemplo Descripción",
-                    clasificacion = "tarea",
-                    horaCumplimiento = null,
-                    estado = false
-                )
-            ),
-            onCompleteItem = {},
-            onDelete = {}
-        )
-    }
-}
-
 

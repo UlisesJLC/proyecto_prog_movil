@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
 
 /**
  * ViewModel to retrieve, update and delete an item from the [ItemsRepository]'s data source.
@@ -44,33 +47,56 @@ class ItemDetailsViewModel(
     val uiState: StateFlow<ItemDetailsUiState> =
         itemsRepository.getItemStream(itemId)
             .filterNotNull()
-            .map {
+            .map { item ->
                 ItemDetailsUiState(
-                    isTask = it.clasificacion == "tarea",
-                    isCompleted = it.estado,
-                    itemDetails = it.toItemDetails()
+                    isCompleted = item.estado,
+                    itemDetails = item.toItemDetails()
                 )
             }.stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+                started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = ItemDetailsUiState()
             )
 
-    /**
-     * Marks the item as completed if it's a task and not already completed.
-     */
+    // Funciones para extraer URIs de multimedia
+    fun getPhotoUris(): List<String> {
+        val fotoUri = uiState.value.itemDetails.fotoUri
+        return if (!fotoUri.isNullOrEmpty()) {
+            Gson().fromJson(fotoUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    fun getVideoUris(): List<String> {
+        val videoUri = uiState.value.itemDetails.videoUri
+        return if (!videoUri.isNullOrEmpty()) {
+            Gson().fromJson(videoUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    fun getAudioUris(): List<String> {
+        val audioUri = uiState.value.itemDetails.audioUri
+        return if (!audioUri.isNullOrEmpty()) {
+            Gson().fromJson(audioUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    // Completar item
     fun completeItem() {
         viewModelScope.launch {
             val currentItem = uiState.value.itemDetails.toItem()
-            if (currentItem.clasificacion == "tarea" && !currentItem.estado) {
+            if (!currentItem.estado) {
                 itemsRepository.updateItem(currentItem.copy(estado = true))
             }
         }
     }
 
-    /**
-     * Deletes the item from the [ItemsRepository]'s data source.
-     */
+    // Eliminar item
     fun deleteItem() {
         viewModelScope.launch {
             itemsRepository.deleteItem(uiState.value.itemDetails.toItem())

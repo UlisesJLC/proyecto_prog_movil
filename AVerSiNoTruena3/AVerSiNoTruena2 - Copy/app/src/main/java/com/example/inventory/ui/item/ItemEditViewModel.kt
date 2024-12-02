@@ -1,21 +1,6 @@
-/*
- * Copyright (C) 2023 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.example.inventory.ui.item
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -23,47 +8,86 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventory.data.ItemsRepository
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel to retrieve and update an item from the [ItemsRepository]'s data source.
- */
 class ItemEditViewModel(
-    savedStateHandle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle?,
     private val itemsRepository: ItemsRepository
 ) : ViewModel() {
 
-    /**
-     * Holds current item UI state
-     */
+    // Estado actual del ítem en la UI
     var itemUiState by mutableStateOf(ItemUiState())
         private set
 
-    private val itemId: Int = checkNotNull(savedStateHandle[ItemEditDestination.itemIdArg])
+    // URIs temporales de multimedia
+    var tempPhotoUris by mutableStateOf(listOf<String>())
+        private set
+    var tempVideoUris by mutableStateOf(listOf<String>())
+        private set
+    var tempAudioUris by mutableStateOf(listOf<String>())
+        private set
+
+    // ID del ítem, solo relevante para edición
+    private val itemId: Int? = savedStateHandle?.get(ItemEditDestination.itemIdArg)
 
     init {
-        viewModelScope.launch {
-            itemUiState = itemsRepository.getItemStream(itemId)
-                .filterNotNull()
-                .first()
-                .toItemUiState(true)
+        if (itemId != null) {
+            // Cargar datos de un ítem existente para edición
+            viewModelScope.launch {
+                val item = itemsRepository.getItemStream(itemId)
+                    .filterNotNull()
+                    .first()
+
+                itemUiState = item.toItemUiState(true)
+
+                tempPhotoUris = Gson().fromJson(
+                    item.fotoUri ?: "[]",
+                    object : TypeToken<List<String>>() {}.type
+                )
+                tempVideoUris = Gson().fromJson(
+                    item.videoUri ?: "[]",
+                    object : TypeToken<List<String>>() {}.type
+                )
+                tempAudioUris = Gson().fromJson(
+                    item.audioUri ?: "[]",
+                    object : TypeToken<List<String>>() {}.type
+                )
+            }
         }
     }
 
     /**
-     * Update the item in the [ItemsRepository]'s data source
+     * Guarda o actualiza un ítem en el repositorio.
      */
-    suspend fun updateItem() {
-        if (validateInput(itemUiState.itemDetails)) {
-            itemsRepository.updateItem(itemUiState.itemDetails.toItem())
+    suspend fun saveOrUpdateItem() {
+        try {
+            if (validateInput(itemUiState.itemDetails)) {
+                val updatedItem = itemUiState.itemDetails.copy(
+                    fotoUri = Gson().toJson(tempPhotoUris),
+                    videoUri = Gson().toJson(tempVideoUris),
+                    audioUri = Gson().toJson(tempAudioUris)
+                )
+
+                Log.d("ItemEditViewModel", "Updated Item: $updatedItem")
+
+                if (itemId == null) {
+                    itemsRepository.insertItem(updatedItem.toItem())
+                } else {
+                    itemsRepository.updateItem(updatedItem.toItem())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ItemEditViewModel", "Error saving item: ${e.message}", e)
         }
     }
 
+
     /**
-     * Updates the [itemUiState] with the value provided in the argument. This method also triggers
-     * a validation for input values.
+     * Actualiza el estado de la UI.
      */
     fun updateUiState(itemDetails: ItemDetails) {
         itemUiState = ItemUiState(
@@ -72,11 +96,39 @@ class ItemEditViewModel(
         )
     }
 
+    /**
+     * Validación de entrada de datos.
+     */
     private fun validateInput(uiState: ItemDetails = itemUiState.itemDetails): Boolean {
         return with(uiState) {
-            // Validamos solo los campos requeridos en función de la clasificación
-            titulo.isNotBlank() && descripcion.isNotBlank() && clasificacion.isNotBlank() &&
-                    (clasificacion != "tarea" || (horaCumplimiento != null && estado != null))
+            titulo.isNotBlank() && descripcion.isNotBlank()
         }
     }
+
+    // Métodos para manejar multimedia temporal
+    fun addTempImageUri(uri: String) {
+        tempPhotoUris = tempPhotoUris + uri
+    }
+
+    fun addTempVideoUri(uri: String) {
+        tempVideoUris = tempVideoUris + uri
+    }
+
+    fun addTempAudioUri(uri: String) {
+        tempAudioUris = tempAudioUris + uri
+    }
+
+    fun removeTempImageUri(uri: String) {
+        tempPhotoUris = tempPhotoUris - uri
+    }
+
+    fun removeTempVideoUri(uri: String) {
+        tempVideoUris = tempVideoUris - uri
+    }
+
+    fun removeTempAudioUri(uri: String) {
+        tempAudioUris = tempAudioUris - uri
+    }
+
+
 }

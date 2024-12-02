@@ -208,3 +208,41 @@ fun VideoPlayer(videoUri: Uri, modifier: Modifier = Modifier.fillMaxWidth()) {
         )
     }
 }
+@Composable
+fun SelectImage(
+    modifier: Modifier = Modifier,
+    onImageSelected: (Uri) -> Unit // Callback para cuando se selecciona la imagen
+) {
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri: Uri? ->
+            imageUri = uri
+            if (uri != null) {
+                onImageSelected(uri)
+            }
+        }
+    )
+
+    Box(modifier = modifier) {
+        // Mostrar la imagen si se ha seleccionado
+        imageUri?.let {
+            AsyncImage(
+                model = it,
+                modifier = Modifier.fillMaxWidth(),
+                contentDescription = "Selected image"
+            )
+        }
+
+        // Botón para seleccionar la imagen
+        Button(
+            onClick = { imagePicker.launch("image/*") },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp)
+        ) {
+            Text("Seleccionar Imagen")
+        }
+    }
+}

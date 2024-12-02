@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Inventory</string>
+    <string name="app_name">Note App</string>
     <string name="in_stock">%d in stock</string>
     <string name="quantity_req">Quantity in Stock*</string>
     <string name="save_action">Save</string>
@@ -10,15 +10,15 @@
     <string name="task_due_time">Task due time</string>
 
 
-    <string name="item_title">Item title</string>
-    <string name="item_description">Item Description</string>
-    <string name="item_classification">Item Classification</string>
-    <string name="item_status">Item Status</string>
+    <string name="item_title">Note title</string>
+    <string name="item_description">Note Description</string>
+    <string name="item_classification">Note Classification</string>
+    <string name="item_status">Note Status</string>
 
     <string name="complete_task">Complete task</string>
-    <string name="item_title_req">Item title Req</string>
-    <string name="item_description_req">Item Description Req</string>
-    <string name="item_classification_req">Item Classification Req</string>
+    <string name="item_title_req">Note title Req</string>
+    <string name="item_description_req">Note Description Req</string>
+    <string name="item_classification_req">Note Classification Req</string>
     <string name="item_due_time">Task Due Time</string>
     <string name="classification_note">Classification note</string>
 
@@ -41,8 +41,8 @@
     <string name="task_description_req">Task Description Req</string>
     <string name="task_classification_req">Task Classification Req</string>
 
-    <string name="item_audio">Item Audio</string>
-    <string name="item_photo">Item Photo</string>
-    <string name="item_video">Item Video</string>
+    <string name="item_audio">Note Audio</string>
+    <string name="item_photo">Note Photo</string>
+    <string name="item_video">Note Video</string>
 
 </resources>

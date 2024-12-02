@@ -182,6 +182,16 @@ fun TaskEntryBody(
     val videoUris = viewModel.getVideoUris()
     val audioUris = viewModel.getAudioUris()
     val tempAlarms = viewModel.tempAlarms
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            // TODO
+            // 3
+            Log.d("TXT", uri.toString())
+            //hasImage = uri != null
+            //imageUri = uri
+        }
+    )
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
@@ -246,6 +256,13 @@ fun TaskEntryBody(
 
         buttonTakePhoto(viewModel = viewModel)
         buttonTakeVideo(viewModel = viewModel)
+        Button(
+            onClick = { imagePicker.launch("image/*") },
+        ) {
+            Text(
+                text = "Select Image"
+            )
+        }
         // Vista previa de fotos y videos
         if (photoUris.isNotEmpty() || videoUris.isNotEmpty()) {
             Text(

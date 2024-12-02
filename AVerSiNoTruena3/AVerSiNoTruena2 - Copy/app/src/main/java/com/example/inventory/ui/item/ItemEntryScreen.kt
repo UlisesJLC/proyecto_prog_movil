@@ -165,7 +165,16 @@ fun ItemEntryBody(
     val tempPhotoUris = viewModel.tempPhotoUris
     val tempVideoUris = viewModel.tempVideoUris
     val tempAudioUris = viewModel.tempAudioUris
-
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            // TODO
+            // 3
+            Log.d("TXT", uri.toString())
+            //hasImage = uri != null
+            //imageUri = uri
+        }
+    )
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
@@ -181,7 +190,13 @@ fun ItemEntryBody(
         buttonTakePhoto(onPhotoCaptured = { uri -> viewModel.addTempImageUri(uri) })
         buttonTakeVideo(onVideoCaptured = { uri -> viewModel.addTempVideoUri(uri) })
         takeAudio(viewModel = viewModel) // Llama a la función takeAudio
-
+        Button(
+            onClick = { imagePicker.launch("image/*") },
+        ) {
+            Text(
+                text = "Select Image"
+            )
+        }
 
         // Mostrar multimedia con opciones para eliminar
         if (tempPhotoUris.isNotEmpty() || tempVideoUris.isNotEmpty()) {

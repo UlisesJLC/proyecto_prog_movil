@@ -403,9 +403,17 @@ fun MultimediaViewers(
             val uriString = audioUris[index]
             val uri = Uri.parse(uriString)
             val realPath = uri.getRealPath(context)
-
             val audioFile = File(realPath)
-            ReproducirAudioScreen(audioFile)
+            Column {
+                ReproducirAudioScreen(audioFile)
+                /*if (showRemoveButtons) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }*/
+            }
         }
     }
 }

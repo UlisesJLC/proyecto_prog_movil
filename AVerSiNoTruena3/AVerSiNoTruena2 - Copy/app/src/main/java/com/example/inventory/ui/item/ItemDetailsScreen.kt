@@ -16,6 +16,8 @@
 
 package com.example.inventory.ui.item
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.widget.VideoView
 import androidx.annotation.StringRes
@@ -65,6 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -83,7 +86,7 @@ import com.example.inventory.ui.theme.InventoryTheme
 import kotlinx.coroutines.launch
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-
+import java.io.File
 
 
 object ItemDetailsDestination : NavigationDestination {
@@ -247,6 +250,7 @@ fun MultimediaViewer(
     onMediaClick: (String, MediaType) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     LazyRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_small))
@@ -287,20 +291,11 @@ fun MultimediaViewer(
 
         // Mostrar audios
         items(audioUris.size) { index ->
-            val uri = audioUris[index]
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable { onMediaClick(uri, MediaType.AUDIO) }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = stringResource(R.string.audio),
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+            val uriString = audioUris[index]
+            val uri = Uri.parse(uriString)
+            val realPath = uri.getRealPath(context)
+            val audioFile = File(realPath)
+            ReproducirAudioScreen(audioFile)
         }
     }
 }

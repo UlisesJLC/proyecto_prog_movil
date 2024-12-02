@@ -18,7 +18,9 @@ package com.example.inventory.ui.item
 
 import android.Manifest
 import android.R.attr.value
+import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -82,11 +84,17 @@ import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
 import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
+import com.example.inventory.ui.task.AndroidAudioPlayer
+import com.example.inventory.ui.task.AndroidAudioRecorder
+import com.example.inventory.ui.task.GrabarAudioScreen
+import com.example.inventory.ui.task.TaskEntryViewModel
+import com.example.inventory.ui.task.getRealPath
 import com.example.inventory.ui.theme.InventoryTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Currency
@@ -171,6 +179,8 @@ fun ItemEntryBody(
         // Captura de multimedia: fotos y videos
         buttonTakePhoto(onPhotoCaptured = { uri -> viewModel.addTempImageUri(uri) })
         buttonTakeVideo(onVideoCaptured = { uri -> viewModel.addTempVideoUri(uri) })
+        takeAudio(viewModel = viewModel) // Llama a la función takeAudio
+
 
         // Mostrar multimedia con opciones para eliminar
         if (tempPhotoUris.isNotEmpty() || tempVideoUris.isNotEmpty()) {
@@ -254,7 +264,7 @@ fun buttonTakePhoto(onPhotoCaptured: (String) -> Unit) {
         onClick = {
             if (cameraPermissionState.status.isGranted) {
                 uri = ComposeFileProvider.getImageUri(context)
-                cameraLauncher.launch(uri)
+                cameraLauncher.launch(uri!!)
             } else {
                 cameraPermissionState.launchPermissionRequest()
             }
@@ -285,7 +295,7 @@ fun buttonTakeVideo(onVideoCaptured: (String) -> Unit) {
         onClick = {
             if (cameraPermissionState.status.isGranted) {
                 uri = ComposeFileProvider.getVideoUri(context)
-                videoLauncher.launch(uri)
+                videoLauncher.launch(uri!!)
             } else {
                 cameraPermissionState.launchPermissionRequest()
             }
@@ -414,7 +424,59 @@ fun MultimediaViewers(
     }
 }
 
+@Composable
+fun takeAudio(viewModel: ItemEntryViewModel) {
+    val context = LocalContext.current
+    val recorder by lazy { AndroidAudioRecorder(context) }
+    val player by lazy { AndroidAudioPlayer(context) }
+    var audioFile: File? = null
+    var audioFile2: File? = null
+    var audioUri by remember { mutableStateOf<Uri?>(null) }
 
+    GrabarAudioScreen(
+        onClickStGra = {
+            val audioFileName = "audio_${System.currentTimeMillis()}.mp3"
+            audioFile = File(context.filesDir, audioFileName)
+            audioUri = ComposeFileProvider.getAudioUri(context, audioFile!!)
+            audioFile?.let {
+                recorder.start(it)
+            }
+        },
+        onClickSpGra = {
+            recorder.stop()
+            if (audioUri != null) {
+                viewModel.addAudioUri((audioUri!!).toString())
+                Log.d("takeAudio", "Added Audio URI to ViewModel: $audioUri")
+            }
+        },
+        onClickStRe = {
+            audioUri?.let { uri ->
+                val realPath = uri.getRealPath(context)
+                if (realPath != null) {
+                    audioFile2 = File(realPath) // Crea el objeto File con la ruta
+                    // ... usa audioFile aquí ...
+                } else {
+                    // Maneja el caso en que no se pudo obtener la ruta
+                    Log.e("takeAudio", "Error getting real path from URI")
+                }
+            }
+            audioFile2?.let { player.start(it) }
+        },
+        onClickSpRe = { player.stop() }
 
+    )
+}
 
+fun Uri.getRealPath(context: Context): String? {
+    if (scheme == "content") {
+        // Intenta obtener la ruta del archivo directamente de la URI
+        val pathSegments = pathSegments
+        if (pathSegments.size > 1) {
+            val fileName = pathSegments.last()
+            val directory = context.filesDir // O la ubicación donde se guarda el archivo
+            return File(directory, fileName).absolutePath
+        }
+    }
+    return path
+}
 

@@ -16,6 +16,8 @@
 
 package com.example.inventory.ui.item
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -55,6 +57,9 @@ class ItemEntryViewModel(private val itemsRepository: ItemsRepository) : ViewMod
     fun addTempVideoUri(uri: String) {
         tempVideoUris = tempVideoUris + uri
     }
+    fun addAudioUri(uri: String) {
+        tempAudioUris = tempAudioUris + uri
+    }
 
     // Métodos para eliminar multimedia
     fun removePhoto(uri: String) {
@@ -86,6 +91,8 @@ class ItemEntryViewModel(private val itemsRepository: ItemsRepository) : ViewMod
             titulo.isNotBlank() && descripcion.isNotBlank()
         }
     }
+
+
 }
 
 

@@ -1,4 +1,4 @@
-package com.example.inventory.ui.task
+package com.example.inventory.ui.item
 
 
 import android.Manifest
@@ -15,13 +15,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,6 +46,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import java.io.File
 import java.io.FileOutputStream
+
 
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -237,4 +241,41 @@ class AndroidAudioPlayer(
     }
 }
 
+@Composable
+fun ReproducirAudioScreen(audioFile: File) {
+    val context = LocalContext.current
+    val player by lazy { AndroidAudioPlayer(context) }
+    var isPlaying by remember { mutableStateOf(false) }
 
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Botón de reproducción/pausa
+        Button(
+            onClick = {
+                if (!isPlaying) {
+                    player.start(audioFile)
+                    isPlaying = true
+                } else {
+                    player.stop()
+                    isPlaying = false
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isPlaying) "Pausar" else "Reproducir")
+        }
+
+        // Nombre del archivo
+        Spacer(modifier = Modifier.height(8.dp)) // Espacio entre el botón y el texto
+        Text(
+            text = audioFile.name,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}

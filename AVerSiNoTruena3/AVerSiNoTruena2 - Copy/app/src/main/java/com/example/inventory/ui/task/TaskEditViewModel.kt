@@ -43,6 +43,9 @@ class TaskEditViewModel(
     var tempVideoUris by mutableStateOf(listOf<String>())
         private set
 
+    var tempAudioUris by mutableStateOf(listOf<String>())
+        private set
+
     private val taskId: Int = checkNotNull(savedStateHandle[TaskEditDestination.taskIdArg])
 
     init {

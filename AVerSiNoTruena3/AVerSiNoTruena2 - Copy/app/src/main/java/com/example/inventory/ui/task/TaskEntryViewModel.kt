@@ -50,10 +50,11 @@ class TaskEntryViewModel(
         Log.d("TaskEntryViewModel", "Added Audio URI: $uri")
         updateUiState(
             taskUiState.taskDetails.copy(
-                videoUri = Gson().toJson(videoUris) // Serializar los URI actualizados
+                audioUri = Gson().toJson(audioUris) // Serializar los URI actualizados correctamente
             )
         )
     }
+
 
     private fun updatePhotoUrisInUiState() {
         val serializedUris = Gson().toJson(imageUris)

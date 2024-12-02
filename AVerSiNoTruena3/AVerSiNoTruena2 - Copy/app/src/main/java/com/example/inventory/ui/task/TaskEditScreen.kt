@@ -159,6 +159,7 @@ fun TaskEditBody(
 ) {
     val tempPhotoUris = viewModel.tempImageUris
     val tempVideoUris = viewModel.tempVideoUris
+    val tempAudioUris = viewModel.tempAudioUris
 
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
@@ -200,6 +201,7 @@ fun TaskEditBody(
             MultimediaViewer(
                 photoUris = tempPhotoUris,
                 videoUris = tempVideoUris,
+                audioUris = tempAudioUris,
                 onRemovePhoto = { uri -> viewModel.removeTempImageUri(uri) },
                 onRemoveVideo = { uri -> viewModel.removeTempVideoUri(uri) },
                 showRemoveButtons = true

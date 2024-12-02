@@ -189,10 +189,13 @@ fun TaskEntryBody(
 ) {
     val photoUris = viewModel.getPhotoUris()
     val videoUris = viewModel.getVideoUris()
+    val audioUris = viewModel.getAudioUris()
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
     ) {
+
+
         TaskInputForm(
             taskDetails = taskUiState.taskDetails,
             onValueChange = onTaskValueChange,
@@ -200,7 +203,6 @@ fun TaskEntryBody(
         )
 
         Button(
-
             onClick = onSaveClick,
             enabled = taskUiState.isEntryValid,
             shape = MaterialTheme.shapes.small,
@@ -216,6 +218,9 @@ fun TaskEntryBody(
         ) {
             Text(text = stringResource(R.string.add_alarm))
         }
+
+        takeAudio(viewModel = viewModel)
+
         buttonTakePhoto(viewModel = viewModel)
         buttonTakeVideo(viewModel = viewModel)
         // Vista previa de fotos y videos
@@ -225,8 +230,13 @@ fun TaskEntryBody(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
-            MultimediaViewer(photoUris = photoUris, videoUris = videoUris, onRemovePhoto = { uri -> viewModel.removePhotoUri(uri) },
-                onRemoveVideo = { uri -> viewModel.removeVideoUri(uri) },showRemoveButtons = true)
+            MultimediaViewer(
+                photoUris = photoUris,
+                videoUris = videoUris,
+                audioUris = audioUris,
+                onRemovePhoto = { uri -> viewModel.removePhotoUri(uri) },
+                onRemoveVideo = { uri -> viewModel.removeVideoUri(uri) },
+                showRemoveButtons = true)
         }
 
 
@@ -247,7 +257,6 @@ fun TaskInputForm(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_medium))
     ) {
-        takeAudio()
         OutlinedTextField(
             value = taskDetails.titulo,
             onValueChange = { onValueChange(taskDetails.copy(titulo = it)) },
@@ -404,7 +413,7 @@ fun buttonTakeVideo(viewModel: TaskEntryViewModel) {
 }
 
 @Composable
-fun takeAudio(){
+fun takeAudio(viewModel: TaskEntryViewModel) {
     val context = LocalContext.current
     val recorder by lazy { AndroidAudioRecorder(context) }
     val player by lazy { AndroidAudioPlayer(context) }
@@ -414,18 +423,20 @@ fun takeAudio(){
 
     GrabarAudioScreen(
         onClickStGra = {
-            // Genera la URI con MediaStore
-
-            // Inicia la grabación (asegúrate de que AndroidAudioRecorder pueda manejar URIs)
-            val audioFileName = "audio_${System.currentTimeMillis()}.mp3" // Nombre único con timestamp
-            audioFile = File(context.filesDir, audioFileName) // Crea el archivo en el almacenamiento interno
-            audioUri = ComposeFileProvider.getAudioUri(context, audioFile!!) // Pasa el archivo a getAudioUri
-            // ...
-            audioFile.also {
-                recorder.start(it!!) // Inicia la grabación
+            val audioFileName = "audio_${System.currentTimeMillis()}.mp3"
+            audioFile = File(context.filesDir, audioFileName)
+            audioUri = ComposeFileProvider.getAudioUri(context, audioFile!!)
+            audioFile?.let {
+                recorder.start(it)
             }
         },
-        onClickSpGra = { recorder.stop() },
+        onClickSpGra = {
+            recorder.stop()
+            if (audioUri != null) {
+                viewModel.addAudioUri(audioUri!!)
+                Log.d("takeAudio", "Added Audio URI to ViewModel: $audioUri")
+            }
+        },
         onClickStRe = {
             audioUri?.let { uri ->
                 val realPath = uri.getRealPath(context)
@@ -440,8 +451,10 @@ fun takeAudio(){
             audioFile2?.let { player.start(it)}
         },
         onClickSpRe = { player.stop() }
+
     )
 }
+
 /*
 @Preview(showBackground = true)
 @Composable

@@ -1,5 +1,6 @@
 package com.example.inventory.ui.task
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,7 @@ class TaskDetailsViewModel(
     // Listas temporales de URIs
     private val imageUris = mutableListOf<String>()
     private val videoUris = mutableListOf<String>()
+    private val audioUris = mutableListOf<String>()
 
     val uiState: StateFlow<TaskDetailsUiState> =
         tasksRepository.getTaskStream(taskId)
@@ -95,6 +97,43 @@ class TaskDetailsViewModel(
         Log.d("TaskEntryViewModel", "Removed Video URI: $uri")
     }
 
+
+    fun getAudioUris(): List<String> {
+        val audioUri = uiState.value.taskDetails.audioUri
+        return if (!audioUri.isNullOrBlank()) {
+            Gson().fromJson(audioUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
+
+    fun addAudioUri(uri: String) {
+        audioUris.add(uri.toString())
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                audioUri = Gson().toJson(audioUris) // Serializa los URIs actualizados
+            )
+        )
+        Log.d("TaskEntryViewModel", "Added Audio URI: $uri")
+    }
+
+    fun removeAudioUri(uri: String) {
+        audioUris.remove(uri)
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                audioUri = Gson().toJson(audioUris) // Actualiza las URIs serializadas
+            )
+        )
+        Log.d("TaskEntryViewModel", "Removed Audio URI: $uri")
+    }
+
+
+
+
+
+
+
+
     var taskUiState by mutableStateOf(TaskUiState())
         private set
 
@@ -135,7 +174,8 @@ data class TaskDetailsInfo(
     val fechaHoraVencimiento: String? = null,
     val estado: Boolean = false,
     val fotoUri: String? = null, // Serializado como JSON
-    val videoUri: String? = null // Serializado como JSON
+    val videoUri: String? = null, // Serializado como JSON
+    val audioUri : String? = null
 )
 
 fun Task.toTaskDetailsInfo(): TaskDetailsInfo = TaskDetailsInfo(
@@ -144,9 +184,11 @@ fun Task.toTaskDetailsInfo(): TaskDetailsInfo = TaskDetailsInfo(
     descripcion = this.descripcion,
     fechaHoraVencimiento = this.fechaHoraVencimiento,
     estado = this.estado,
-    fotoUri = this.fotoUri, // Asegúrate de asignar este campo
-    videoUri = this.videoUri // Asegúrate de asignar este campo
+    fotoUri = this.fotoUri, // Confirmar que no sea nulo
+    videoUri = this.videoUri, // Confirmar que no sea nulo
+    audioUri = this.audioUri  // Confirmar que no sea nulo
 )
+
 
 
 fun TaskDetailsInfo.toTask(): Task = Task(

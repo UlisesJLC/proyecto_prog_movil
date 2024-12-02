@@ -98,26 +98,32 @@ private fun HomeBody(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
+    var showTasks by remember { mutableStateOf(false) }
+    // Botón para filtrar tareas
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
     ) {
-        if (itemList.isEmpty() && taskList.isEmpty()) {
-            Text(
-                text = stringResource(R.string.no_item_description),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(contentPadding)
-            )
-        } else {
-            Text("Items", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
-            InventoryList(
-                itemList = itemList,
-                onItemClick = onItemClick,
-                contentPadding = contentPadding,
-                modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_small))
-            )
 
+
+
+
+        if (itemList.isEmpty() && taskList.isEmpty()) {
+            // ...
+        } else {
+            // Muestra los items solo si showTasks es false
+            if (!showTasks) {
+                Text("Items", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
+                InventoryList(
+                    itemList = itemList,
+                    onItemClick = onItemClick,
+                    contentPadding = contentPadding,
+                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_small))
+                )
+            }
+
+            // Muestra las tareas siempre
             Text("Tasks", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
             TaskList(
                 taskList = taskList,
@@ -125,6 +131,13 @@ private fun HomeBody(
                 contentPadding = contentPadding,
                 modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.padding_small))
             )
+        }
+        // Botón para filtrar tareas
+        Button(
+            onClick = { showTasks = !showTasks }, // Cambia el estado al hacer clic
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (showTasks) "Mostrar todo" else "Mostrar solo tareas")
         }
     }
 }

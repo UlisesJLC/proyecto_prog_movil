@@ -83,6 +83,7 @@ import com.example.inventory.ComposeFileProvider
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
 import com.example.inventory.ui.AppViewModelProvider
+import com.example.inventory.ui.item.getRealPath
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.task.AndroidAudioPlayer
 import com.example.inventory.ui.task.AndroidAudioRecorder
@@ -339,6 +340,7 @@ fun MultimediaViewers(
     showRemoveButtons: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     LazyRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_small))
@@ -397,29 +399,12 @@ fun MultimediaViewers(
 
         // Mostrar audios
         items(audioUris.size) { index ->
-            val uri = audioUris[index]
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = stringResource(R.string.audio),
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                if (showRemoveButtons) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.delete),
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .clickable { onRemoveAudio(uri) },
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+            val uriString = audioUris[index]
+            val uri = Uri.parse(uriString)
+            //val realPath = uri.getRealPath(context)
+
+            val audioFile = File(realPath)
+            ReproducirAudioScreen(audioFile)
         }
     }
 }

@@ -413,7 +413,6 @@ fun takeAudio(){
     var audioUri by remember { mutableStateOf<Uri?>(null) }
 
     GrabarAudioScreen(
-
         onClickStGra = {
             // Genera la URI con MediaStore
 
@@ -464,12 +463,12 @@ private fun TaskEntryScreenPreview() {
 */
 fun Uri.getRealPath(context: Context): String? {
     if (scheme == "content") {
-        val cursor = context.contentResolver.query(this, null, null, null, null)
-        cursor?.use {
-            if (cursor.moveToFirst()) {
-                val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-                return cursor.getString(columnIndex)
-            }
+        // Intenta obtener la ruta del archivo directamente de la URI
+        val pathSegments = pathSegments
+        if (pathSegments.size > 1) {
+            val fileName = pathSegments.last()
+            val directory = context.filesDir // O la ubicación donde se guarda el archivo
+            return File(directory, fileName).absolutePath
         }
     }
     return path

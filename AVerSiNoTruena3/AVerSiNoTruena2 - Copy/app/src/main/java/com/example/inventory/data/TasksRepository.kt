@@ -13,7 +13,7 @@ interface TasksRepository {
     fun getTasksWithPhoto(): Flow<List<Task>>
     fun getTasksWithAudio(): Flow<List<Task>>
 
-    suspend fun insertTask(task: Task)
+    suspend fun insertTask(task: Task):Long
     suspend fun updateTask(task: Task)
     suspend fun deleteTask(task: Task)
 

@@ -20,7 +20,7 @@ interface AlarmDao {
     suspend fun deleteAlarmsByTaskId(taskId: Int)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(alarm: Alarm)
+    suspend fun insert(alarm: Alarm): Long
 
     @Delete
     suspend fun delete(alarm: Alarm)

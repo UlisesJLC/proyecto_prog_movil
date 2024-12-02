@@ -114,7 +114,7 @@ fun TaskEntryScreen(
                 )
 
                 coroutineScope.launch {
-                    viewModel.saveTask()
+                    val taskId = viewModel.saveTask()
 
 
 
@@ -131,42 +131,30 @@ fun TaskEntryScreen(
 
                     WorkManager.getInstance(context).enqueue(notificationWork)
 
+
+                    if (taskId != null) {
+                        viewModel.processTempAlarms(taskId)
+                    } else {
+                        Log.e("TaskEntryScreen", "Failed to save task")
+                    }
+
                     navigateBack()
+
                 }
             },
             onAddAlarmClick = {
                 coroutineScope.launch {
-                    val taskId = viewModel.taskUiState.taskDetails.id
-                    val newAlarmTime = "2024-11-30 14:00" // Reemplaza con tu lógica de obtención
-                    Log.d("TaskEntry", "Adding alarm for taskId: $taskId at $newAlarmTime")
-
-                    viewModel.addAlarm(taskId, newAlarmTime)
-
-                    // Verifica el delay calculado
-                    val delay = calculateDelay(newAlarmTime)
-                    Log.d("TaskEntry", "Calculated delay: $delay ms")
-
-                    if (delay > 0) {
-                        // Programar la alarma en WorkManager
-                        val alarmId = UUID.randomUUID().toString()
-                        val alarmRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
-                            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-                            .setInputData(
-                                Data.Builder()
-                                    .putString("task_title", viewModel.taskUiState.taskDetails.titulo)
-                                    .putString("task_description", viewModel.taskUiState.taskDetails.descripcion)
-                                    .putString("workManagerId", alarmId)
-                                    .build()
-                            )
-                            .build()
-
-                        WorkManager.getInstance(context).enqueue(alarmRequest)
-                        Log.d("TaskEntry", "Alarm enqueued with WorkManager ID: $alarmId")
-                    } else {
-                        Log.e("TaskEntry", "Failed to add alarm: Invalid delay.")
+                    showDatePicker(context) { selectedDate ->
+                        showTimePicker(context) { selectedTime ->
+                            val newAlarmTime = "$selectedDate $selectedTime"
+                            Log.d("TaskEntry", "Adding temporary alarm at $newAlarmTime")
+                            viewModel.addTempAlarm(newAlarmTime)
+                        }
                     }
                 }
             }
+
+
             ,
             modifier = Modifier
                 .padding(innerPadding)

@@ -6,13 +6,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.inventory.data.Alarm
 import com.example.inventory.data.AlarmRepository
 import com.example.inventory.data.Task
 import com.example.inventory.data.TasksRepository
+import com.example.inventory.worker.NotificationWorker
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 
 class TaskEntryViewModel(
@@ -24,6 +29,66 @@ class TaskEntryViewModel(
     private val imageUris = mutableListOf<String>()
     private val videoUris = mutableListOf<String>()
     private val audioUris = mutableListOf<String>()
+    private val tempAlarms = mutableListOf<Pair<String, String>>() // Lista de alarmas temporales (fechaHora, tipo)
+
+    fun addTempAlarm(fechaHora: String, tipo: String = "Manual") {
+        tempAlarms.add(fechaHora to tipo)
+        Log.d("TaskEntryViewModel", "Temporary alarm added: $fechaHora, $tipo")
+    }
+
+    suspend fun processTempAlarms(taskId: Int) {
+        tempAlarms.forEach { (fechaHora, tipo) ->
+            val alarm = Alarm(
+                taskId = taskId,
+                fechaHora = fechaHora,
+                estado = true,
+                tipo = tipo,
+                workManagerId = "" // Inicialmente vacío
+            )
+
+            // Inserta la alarma y captura el ID generado
+            val alarmId = alarmsRepository.insertAlarm(alarm).toInt()
+            Log.d("processTempAlarms", "Inserted alarm with ID: $alarmId")
+
+            if (alarmId > 0) {
+                // Configura la alarma en WorkManager
+                val delay = calculateDelay(fechaHora)
+                if (delay > 0) {
+                    val alarmRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
+                        .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                        .setInputData(
+                            Data.Builder()
+                                .putString("task_title", taskUiState.taskDetails.titulo)
+                                .putString("task_description", taskUiState.taskDetails.descripcion)
+                                .build()
+                        )
+                        .build()
+
+                    WorkManager.getInstance().enqueue(alarmRequest)
+
+                    // Actualiza la alarma con el WorkManager ID
+                    val updatedAlarm = alarm.copy(
+                        id = alarmId,
+                        workManagerId = alarmRequest.id.toString()
+                    )
+                    alarmsRepository.updateAlarm(updatedAlarm)
+                    Log.d("processTempAlarms", "Updated alarm with WorkManager ID: ${alarmRequest.id}")
+                } else {
+                    Log.w("processTempAlarms", "Skipped creating alarm due to invalid delay: $delay")
+                }
+            } else {
+                Log.e("processTempAlarms", "Failed to insert alarm into the database.")
+            }
+        }
+        tempAlarms.clear() // Limpiar la lista temporal después de procesarlas
+    }
+
+
+
+
+
+
+
 
     fun addImageUri(uri: Uri) {
         imageUris.add(uri.toString())
@@ -115,25 +180,31 @@ class TaskEntryViewModel(
         )
     }
 
-    suspend fun saveTask() {
-        if (validateInput()) {
+    suspend fun saveTask(): Int? {
+        return if (validateInput()) {
             val serializedImageUris = Gson().toJson(imageUris)
             val serializedVideoUris = Gson().toJson(videoUris)
             val serializedAudioUris = Gson().toJson(audioUris)
 
-            Log.d("TaskEntryViewModel", "Saving Task with Photo URIs: $serializedImageUris")
-            Log.d("TaskEntryViewModel", "Saving Task with Video URIs: $serializedVideoUris")
-            Log.d("TaskEntryViewModel", "Saving Task with Audio URIs: $serializedAudioUris")
+            Log.d("TaskEntryViewModel", "Saving Task with multimedia URIs")
             val task = taskUiState.taskDetails.copy(
                 fotoUri = serializedImageUris,
                 videoUri = serializedVideoUris,
                 audioUri = serializedAudioUris
             ).toTask()
 
-            tasksRepository.insertTask(task)
-            Log.d("TaskEntryViewModel", "Task saved: $task")
+            val generatedId = tasksRepository.insertTask(task).toInt()
+            Log.d("TaskEntryViewModel", "Task saved with ID: $generatedId")
+
+            // Actualiza el estado con el ID generado
+            updateUiState(taskUiState.taskDetails.copy(id = generatedId))
+            return generatedId
+        } else {
+            null
         }
     }
+
+
 
     suspend fun addAlarm(taskId: Int, fechaHora: String) {
         val alarm = Alarm(

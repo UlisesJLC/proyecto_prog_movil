@@ -48,6 +48,16 @@ class TaskEditViewModel(
 
     private val taskId: Int = checkNotNull(savedStateHandle[TaskEditDestination.taskIdArg])
 
+
+    private val tempAlarms = mutableListOf<Pair<String, String>>() // Lista de alarmas temporales (fechaHora, tipo)
+
+    fun addTempAlarm(fechaHora: String, tipo: String = "Manual") {
+        tempAlarms.add(fechaHora to tipo)
+        Log.d("TaskEntryViewModel", "Temporary alarm added: $fechaHora, $tipo")
+    }
+
+
+
     init {
         viewModelScope.launch {
             // Cargar datos de la tarea
@@ -68,11 +78,15 @@ class TaskEditViewModel(
             )
 
             // Cargar alarmas asociadas a la tarea
-            alarmsRepository.getAlarmsByTaskId(taskId).collect { alarms ->
-                alarmsUiState = alarms
+            launch {
+                alarmsRepository.getAlarmsByTaskId(taskId).collect { alarms ->
+                    alarmsUiState = alarms
+                    Log.d("TaskEditViewModel", "Loaded alarms: $alarms")
+                }
             }
         }
     }
+
 
     fun addAlarm(alarm: Alarm) {
         viewModelScope.launch {
@@ -90,13 +104,21 @@ class TaskEditViewModel(
         viewModelScope.launch {
             try {
                 if (alarm.workManagerId.isNotBlank()) {
-                    // Usa el contexto proporcionado para obtener el WorkManager
+                    Log.d("TaskEditViewModel", "Attempting to cancel WorkManager job with ID: ${alarm.workManagerId}")
                     val workManager = WorkManager.getInstance(context)
                     workManager.cancelWorkById(UUID.fromString(alarm.workManagerId))
+                    Log.d("TaskEditViewModel", "WorkManager job cancelled successfully.")
+                } else {
+                    Log.w("TaskEditViewModel", "WorkManager ID is blank; skipping cancellation.")
                 }
+
+                // Eliminar la alarma de la base de datos
                 alarmsRepository.deleteAlarm(alarm)
+                Log.d("TaskEditViewModel", "Alarm deleted successfully from the repository.")
             } catch (e: IllegalArgumentException) {
                 Log.e("TaskEditViewModel", "Error deleting alarm: Invalid UUID string: ${alarm.workManagerId}", e)
+            } catch (e: Exception) {
+                Log.e("TaskEditViewModel", "Unexpected error while deleting alarm: ${e.message}", e)
             }
         }
     }

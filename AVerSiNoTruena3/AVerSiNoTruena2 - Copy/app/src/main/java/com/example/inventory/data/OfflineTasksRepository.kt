@@ -25,7 +25,7 @@ class OfflineTasksRepository(
 
     override fun getTasksWithAudio(): Flow<List<Task>> = taskDao.getTasksWithAudio()
 
-    override suspend fun insertTask(task: Task) = taskDao.insert(task)
+    override suspend fun insertTask(task: Task): Long = taskDao.insert(task) // Devuelve el ID generado
 
     override suspend fun updateTask(task: Task) = taskDao.update(task)
 

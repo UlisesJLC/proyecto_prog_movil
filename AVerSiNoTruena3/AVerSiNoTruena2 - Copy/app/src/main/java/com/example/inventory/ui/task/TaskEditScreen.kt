@@ -89,48 +89,17 @@ fun TaskEditScreen(
             },
             onAddAlarmClick = {
                 coroutineScope.launch {
-                    val taskId = viewModel.taskUiState.taskDetails.id
-                    var newAlarmTime: String? = null
-
-                    // Mostrar DatePicker y TimePicker
                     showDatePicker(context) { selectedDate ->
                         showTimePicker(context) { selectedTime ->
-                            newAlarmTime = "$selectedDate $selectedTime"
-
-                            newAlarmTime?.let {
-                                val alarm = Alarm(
-                                    taskId = taskId,
-                                    fechaHora = it,
-                                    tipo = "Notification",
-                                    estado = true,
-                                    workManagerId = ""
-                                )
-                                viewModel.addAlarm(alarm)
-
-                                val delay = calculateDelay(it)
-                                if (delay > 0) {
-                                    val alarmId = UUID.randomUUID().toString()
-                                    val alarmRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
-                                        .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-                                        .setInputData(
-                                            Data.Builder()
-                                                .putString("task_title", viewModel.taskUiState.taskDetails.titulo)
-                                                .putString("task_description", viewModel.taskUiState.taskDetails.descripcion)
-                                                .putString("workManagerId", alarmId)
-                                                .build()
-                                        )
-                                        .build()
-
-                                    WorkManager.getInstance(context).enqueue(alarmRequest)
-
-                                    val updatedAlarm = alarm.copy(workManagerId = alarmRequest.id.toString())
-                                    viewModel.addAlarm(updatedAlarm)
-                                }
-                            }
+                            val newAlarmTime = "$selectedDate $selectedTime"
+                            Log.d("TaskEntry", "Adding temporary alarm at $newAlarmTime")
+                            viewModel.addTempAlarm(newAlarmTime)
                         }
                     }
                 }
-            },
+            }
+
+            ,
             onDeleteAlarmClick = { alarm ->
                 coroutineScope.launch {
                     viewModel.deleteAlarm(context, alarm)
@@ -227,55 +196,47 @@ fun TaskEditBody(
 
 
 
-
-
-
-
-
 @Composable
 fun AlarmDisplay(alarm: Alarm, index: Int, onDelete: (Alarm) -> Unit) {
-    if(alarm.workManagerId!="") {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Alarma",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Fecha y Hora: ${alarm.fechaHora}",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        Text(
+            text = "Tipo: ${alarm.tipo}",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        Text(
+            text = if (alarm.estado) "Estado: Activa" else "Estado: Inactiva",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Botón para eliminar
+        Button(
+            onClick = { onDelete(alarm) },
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            Text(
-                text = "Alarma",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = "Fecha y Hora: ${alarm.fechaHora}",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Text(
-                text = "Tipo: ${alarm.tipo}",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Text(
-                text = if (alarm.estado) "Estado: Activa" else "Estado: Inactiva",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Botón para eliminar
-            Button(
-                onClick = { onDelete(alarm) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text(text = "Eliminar")
-            }
-
-            Divider(color = MaterialTheme.colorScheme.onSurfaceVariant, thickness = 1.dp)
-
-
+            Text(text = "Eliminar")
         }
+
+        Divider(color = MaterialTheme.colorScheme.onSurfaceVariant, thickness = 1.dp)
     }
 }
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

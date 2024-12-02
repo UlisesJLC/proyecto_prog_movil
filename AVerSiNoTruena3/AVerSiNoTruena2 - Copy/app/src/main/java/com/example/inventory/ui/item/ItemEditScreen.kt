@@ -122,6 +122,8 @@ fun ItemEditBody(
         // Captura de multimedia: fotos y videos
         buttonTakePhoto(onPhotoCaptured = { uri -> viewModel.addTempImageUri(uri) })
         buttonTakeVideo(onVideoCaptured = { uri -> viewModel.addTempVideoUri(uri) })
+        //takeAudio(viewModel = viewModel) // Llama a la función takeAudio
+
 
         // Mostrar multimedia con opciones para eliminar
         if (tempPhotoUris.isNotEmpty() || tempVideoUris.isNotEmpty()) {
@@ -151,8 +153,6 @@ fun ItemEditBody(
         }
     }
 }
-
-
 
 
 

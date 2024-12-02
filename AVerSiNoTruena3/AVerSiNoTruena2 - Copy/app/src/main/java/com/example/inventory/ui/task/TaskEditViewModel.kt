@@ -100,6 +100,10 @@ class TaskEditViewModel(
                 object : TypeToken<MutableList<String>>() {}.type
             )
 
+            tempAudioUris = Gson().fromJson(
+                task.audioUri ?: "[]",
+                object : TypeToken<MutableList<String>>() {}.type
+            )
             
 
             // Cargar alarmas asociadas a la tarea
@@ -207,12 +211,21 @@ class TaskEditViewModel(
         tempVideoUris = tempVideoUris + uri
     }
 
+    fun addTempAudioUri(uri: String) {
+        tempAudioUris = tempAudioUris + uri
+    }
+
+
     fun removeTempImageUri(uri: String) {
         tempImageUris = tempImageUris - uri
     }
 
     fun removeTempVideoUri(uri: String) {
         tempVideoUris = tempVideoUris - uri
+    }
+
+    fun removeTempAudioUri(uri: String) {
+        tempAudioUris = tempAudioUris - uri
     }
 
 
@@ -222,7 +235,8 @@ class TaskEditViewModel(
             // Actualiza las listas persistentes con las listas temporales al guardar
             val updatedTaskDetails = taskUiState.taskDetails.copy(
                 fotoUri = Gson().toJson(tempImageUris),
-                videoUri = Gson().toJson(tempVideoUris)
+                videoUri = Gson().toJson(tempVideoUris),
+                audioUri = Gson().toJson(tempAudioUris)
             )
             tasksRepository.updateTask(updatedTaskDetails.toTask())
         }

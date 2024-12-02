@@ -181,7 +181,7 @@ fun TaskEntryBody(
     val photoUris = viewModel.getPhotoUris()
     val videoUris = viewModel.getVideoUris()
     val audioUris = viewModel.getAudioUris()
-    val tempAlarms = viewModel.getTempAlarms()
+    val tempAlarms = viewModel.tempAlarms
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))

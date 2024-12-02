@@ -3,6 +3,7 @@ package com.example.inventory.ui.task
 import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -29,23 +30,25 @@ class TaskEntryViewModel(
     private val imageUris = mutableListOf<String>()
     private val videoUris = mutableListOf<String>()
     private val audioUris = mutableListOf<String>()
-    private val tempAlarms = mutableListOf<Pair<String, String>>() // Lista de alarmas temporales (fechaHora, tipo)
+    // Cambia tempAlarms a un SnapshotStateList
+    private val _tempAlarms = mutableStateListOf<Pair<String, String>>()
+    val tempAlarms: List<Pair<String, String>> get() = _tempAlarms
 
     fun addTempAlarm(fechaHora: String, tipo: String = "Manual") {
-        tempAlarms.add(fechaHora to tipo)
+        _tempAlarms.add(fechaHora to tipo)
         Log.d("TaskEntryViewModel", "Temporary alarm added: $fechaHora, $tipo")
     }
 
     fun removeTempAlarm(index: Int) {
-        if (index in tempAlarms.indices) {
-            val removedAlarm = tempAlarms.removeAt(index)
+        if (index in _tempAlarms.indices) {
+            val removedAlarm = _tempAlarms.removeAt(index)
             Log.d("TaskEntryViewModel", "Temporary alarm removed: $removedAlarm")
         } else {
             Log.w("TaskEntryViewModel", "Invalid index for removing temporary alarm: $index")
         }
     }
 
-    fun getTempAlarms(): List<Pair<String, String>> = tempAlarms
+
 
 
 
@@ -93,7 +96,7 @@ class TaskEntryViewModel(
                 Log.e("processTempAlarms", "Failed to insert alarm into the database.")
             }
         }
-        tempAlarms.clear() // Limpiar la lista temporal después de procesarlas
+
     }
 
 

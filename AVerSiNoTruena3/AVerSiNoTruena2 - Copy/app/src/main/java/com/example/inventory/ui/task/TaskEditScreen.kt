@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +69,7 @@ fun TaskEditScreen(
     val alarms = viewModel.alarmsUiState // Lista de Alarmas
     val context = LocalContext.current
 
+
     Scaffold(
         topBar = {
             InventoryTopAppBar(
@@ -84,6 +86,8 @@ fun TaskEditScreen(
             onSaveClick = {
                 coroutineScope.launch {
                     viewModel.updateTask()
+                    val taskId = viewModel.taskUiState.taskDetails.id
+                    viewModel.processTempAlarms(taskId)
                     navigateBack()
                 }
             },
@@ -129,6 +133,7 @@ fun TaskEditBody(
     val tempPhotoUris = viewModel.tempImageUris
     val tempVideoUris = viewModel.tempVideoUris
     val tempAudioUris = viewModel.tempAudioUris
+    val tempAlarms = viewModel.tempAlarms
 
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
@@ -157,6 +162,37 @@ fun TaskEditBody(
         ) {
             Text(text = stringResource(R.string.add_alarm))
         }
+
+        // Mostrar alarmas temporales
+        if (tempAlarms.isNotEmpty()) {
+            Text(
+                text = "Alarmas Temporales:",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            tempAlarms.forEachIndexed { index, alarm ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(text = "Fecha y Hora: ${alarm.first}")
+                        Text(text = "Tipo: ${alarm.second}")
+                    }
+                    Button(
+                        onClick = { viewModel.removeTempAlarm(index) },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(text = "Eliminar")
+                    }
+                }
+                Divider(color = MaterialTheme.colorScheme.onSurfaceVariant, thickness = 1.dp)
+            }
+        }
+
+
 
         buttonTakePhoto(onPhotoCaptured = { uri -> viewModel.addTempImageUri(uri) })
         buttonTakeVideo(onVideoCaptured = { uri -> viewModel.addTempVideoUri(uri) })

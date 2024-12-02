@@ -409,6 +409,7 @@ fun takeAudio(){
     val recorder by lazy { AndroidAudioRecorder(context) }
     val player by lazy { AndroidAudioPlayer(context) }
     var audioFile: File? = null
+    var audioFile2: File? = null
     var audioUri by remember { mutableStateOf<Uri?>(null) }
 
     GrabarAudioScreen(
@@ -427,7 +428,17 @@ fun takeAudio(){
         },
         onClickSpGra = { recorder.stop() },
         onClickStRe = {
-            audioFile?.let { player.start(it)}
+            audioUri?.let { uri ->
+                val realPath = uri.getRealPath(context)
+                if (realPath != null) {
+                    audioFile2 = File(realPath) // Crea el objeto File con la ruta
+                    // ... usa audioFile aquí ...
+                } else {
+                    // Maneja el caso en que no se pudo obtener la ruta
+                    Log.e("takeAudio", "Error getting real path from URI")
+                }
+            }
+            audioFile2?.let { player.start(it)}
         },
         onClickSpRe = { player.stop() }
     )

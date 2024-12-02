@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.VideoView
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -28,8 +30,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -62,6 +67,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.inventory.InventoryTopAppBar
@@ -232,28 +238,39 @@ fun MultimediaViewer(
     showRemoveButtons: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    var fullscreenImageUri by remember { mutableStateOf<String?>(null) }
+    var fullscreenVideoUri by remember { mutableStateOf<String?>(null) }
+    var fullscreenAudioUri by remember { mutableStateOf<String?>(null) }
+
     LazyRow(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_small)),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Mostrar imágenes
         items(photoUris.size) { index ->
             val uri = photoUris[index]
-            Box(modifier = Modifier.size(100.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                    .clickable { fullscreenImageUri = uri } // Abre el diálogo de imagen
+            ) {
                 Image(
                     painter = rememberAsyncImagePainter(uri),
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                    modifier = Modifier.fillMaxSize()
                 )
                 if (showRemoveButtons) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
+                        imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.delete),
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .clickable { onRemovePhoto(uri) },
+                            .padding(4.dp)
+                            .clickable { onRemovePhoto(uri) }
+                            .size(24.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -265,22 +282,26 @@ fun MultimediaViewer(
             val uri = videoUris[index]
             Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { fullscreenVideoUri = uri } // Abre el diálogo de video
             ) {
                 Icon(
-                    imageVector = Icons.Default.PlayArrow,
+                    imageVector = Icons.Default.ArrowForward,
                     contentDescription = stringResource(R.string.video),
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 if (showRemoveButtons) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
+                        imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.delete),
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .clickable { onRemoveVideo(uri) },
+                            .padding(4.dp)
+                            .clickable { onRemoveVideo(uri) }
+                            .size(24.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -290,10 +311,158 @@ fun MultimediaViewer(
         // Mostrar audios
         items(audioUris.size) { index ->
             val uri = audioUris[index]
-            AudioCard(uri = uri, onRemoveAudio = onRemoveAudio, showRemoveButtons = showRemoveButtons)
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .clickable { fullscreenAudioUri = uri } // Abre el diálogo de audio
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = stringResource(R.string.audio),
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                if (showRemoveButtons) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.delete),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .clickable { onRemoveAudio(uri) }
+                            .size(24.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
     }
+
+    // Diálogo de imagen en pantalla completa
+    fullscreenImageUri?.let { uri ->
+        FullscreenImageDialog(uri = uri, onDismiss = { fullscreenImageUri = null })
+    }
+
+    // Diálogo de video en pantalla completa
+    fullscreenVideoUri?.let { uri ->
+        FullscreenVideoDialog(uri = uri, onDismiss = { fullscreenVideoUri = null })
+    }
+
+    // Diálogo de audio en pantalla completa
+    fullscreenAudioUri?.let { uri ->
+        FullscreenAudioDialog(uri = uri, onDismiss = { fullscreenAudioUri = null })
+    }
 }
+
+
+
+@Composable
+fun FullscreenImageDialog(uri: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        modifier = Modifier.padding(16.dp),
+        text = {
+            Image(
+                painter = rememberAsyncImagePainter(uri),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        }
+    )
+}
+
+@Composable
+fun FullscreenVideoDialog(uri: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        modifier = Modifier.padding(16.dp),
+        text = {
+            AndroidView(
+                factory = { context ->
+                    VideoView(context).apply {
+                        setVideoURI(android.net.Uri.parse(uri))
+                        setOnPreparedListener { it.start() } // Inicia el video automáticamente
+                        setOnCompletionListener { onDismiss() } // Cierra el dialog al terminar
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+            )
+        }
+    )
+}
+
+
+@Composable
+fun FullscreenAudioDialog(uri: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val player = remember { AndroidAudioPlayer(context) }
+    var isPlaying by remember { mutableStateOf(false) }
+
+    // Convertir URI a un path legible
+    val filePath = Uri.parse(uri).getRealPath(context)
+
+    AlertDialog(
+        onDismissRequest = {
+            // Detener reproducción si el diálogo se cierra
+            if (isPlaying) {
+                player.stop()
+                isPlaying = false
+            }
+            onDismiss()
+        },
+        confirmButton = {},
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Mostrar nombre del archivo
+                Text(
+                    text = uri.split("/").lastOrNull() ?: "Archivo de audio",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Botón para reproducir/detener audio
+                Button(onClick = {
+                    if (isPlaying) {
+                        player.stop()
+                        isPlaying = false
+                    } else {
+                        if (filePath != null) {
+                            try {
+                                player.start(File(filePath))
+                                isPlaying = true
+                            } catch (e: Exception) {
+                                Log.e("FullscreenAudioDialog", "Error reproduciendo el audio: ${e.message}")
+                            }
+                        } else {
+                            Log.e("FullscreenAudioDialog", "Ruta de archivo inválida para URI: $uri")
+                        }
+                    }
+                }) {
+                    Text(if (isPlaying) "Detener" else "Reproducir")
+                }
+            }
+        },
+        modifier = Modifier.padding(16.dp)
+    )
+}
+
+
+
+
 
 @Composable
 fun AudioCard(

@@ -23,7 +23,9 @@ import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
+import android.media.MediaPlayer
 import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -245,6 +247,7 @@ fun TaskInputForm(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_medium))
     ) {
+        takeAudio()
         OutlinedTextField(
             value = taskDetails.titulo,
             onValueChange = { onValueChange(taskDetails.copy(titulo = it)) },
@@ -397,32 +400,36 @@ fun buttonTakeVideo(viewModel: TaskEntryViewModel) {
     ) {
         Text("Tomar video")
     }
-    takeAudio()
+
 }
 
 @Composable
 fun takeAudio(){
     val context = LocalContext.current
-    val recorder by lazy {
-        AndroidAudioRecorder(context)
-    }
-
-    val player by lazy {
-        AndroidAudioPlayer(context)
-    }
+    val recorder by lazy { AndroidAudioRecorder(context) }
+    val player by lazy { AndroidAudioPlayer(context) }
     var audioFile: File? = null
     var audioUri by remember { mutableStateOf<Uri?>(null) }
 
     GrabarAudioScreen(
+
         onClickStGra = {
-            File(context.cacheDir, "audio.mp3").also {
-                recorder.start(it)
-                audioFile = it
+            // Genera la URI con MediaStore
+
+            // Inicia la grabación (asegúrate de que AndroidAudioRecorder pueda manejar URIs)
+            val audioFileName = "audio_${System.currentTimeMillis()}.mp3" // Nombre único con timestamp
+            audioFile = File(context.filesDir, audioFileName) // Crea el archivo en el almacenamiento interno
+            audioUri = ComposeFileProvider.getAudioUri(context, audioFile!!) // Pasa el archivo a getAudioUri
+            // ...
+            audioFile.also {
+                recorder.start(it!!) // Inicia la grabación
             }
         },
-        onClickSpGra = {recorder.stop()},
-        onClickStRe = { audioFile?.let { player.start(it) } },
-        onClickSpRe = {player.stop()}
+        onClickSpGra = { recorder.stop() },
+        onClickStRe = {
+            audioFile?.let { player.start(it)}
+        },
+        onClickSpRe = { player.stop() }
     )
 }
 /*
@@ -444,3 +451,15 @@ private fun TaskEntryScreenPreview() {
     }
 }
 */
+fun Uri.getRealPath(context: Context): String? {
+    if (scheme == "content") {
+        val cursor = context.contentResolver.query(this, null, null, null, null)
+        cursor?.use {
+            if (cursor.moveToFirst()) {
+                val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                return cursor.getString(columnIndex)
+            }
+        }
+    }
+    return path
+}

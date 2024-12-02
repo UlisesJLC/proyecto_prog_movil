@@ -23,6 +23,7 @@ class TaskEntryViewModel(
     // Listas temporales de URIs
     private val imageUris = mutableListOf<String>()
     private val videoUris = mutableListOf<String>()
+    private val audioUris = mutableListOf<String>()
 
     fun addImageUri(uri: Uri) {
         imageUris.add(uri.toString())
@@ -44,6 +45,15 @@ class TaskEntryViewModel(
         )
     }
 
+    fun addAudioUri(uri: Uri) {
+        audioUris.add(uri.toString())
+        Log.d("TaskEntryViewModel", "Added Audio URI: $uri")
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                videoUri = Gson().toJson(videoUris) // Serializar los URI actualizados
+            )
+        )
+    }
 
     private fun updatePhotoUrisInUiState() {
         val serializedUris = Gson().toJson(imageUris)
@@ -82,6 +92,15 @@ class TaskEntryViewModel(
         )
         Log.d("TaskEntryViewModel", "Removed Video URI: $uri")
     }
+    fun removeAudioUri(uri: String) {
+        audioUris.remove(uri)
+        updateUiState(
+            taskUiState.taskDetails.copy(
+                audioUri = Gson().toJson(videoUris) // Actualiza las URIs serializadas
+            )
+        )
+        Log.d("TaskEntryViewModel", "Removed Audio URI: $uri")
+    }
 
 
 
@@ -99,13 +118,15 @@ class TaskEntryViewModel(
         if (validateInput()) {
             val serializedImageUris = Gson().toJson(imageUris)
             val serializedVideoUris = Gson().toJson(videoUris)
+            val serializedAudioUris = Gson().toJson(audioUris)
 
             Log.d("TaskEntryViewModel", "Saving Task with Photo URIs: $serializedImageUris")
             Log.d("TaskEntryViewModel", "Saving Task with Video URIs: $serializedVideoUris")
-
+            Log.d("TaskEntryViewModel", "Saving Task with Audio URIs: $serializedAudioUris")
             val task = taskUiState.taskDetails.copy(
                 fotoUri = serializedImageUris,
-                videoUri = serializedVideoUris
+                videoUri = serializedVideoUris,
+                audioUri = serializedAudioUris
             ).toTask()
 
             tasksRepository.insertTask(task)
@@ -152,7 +173,14 @@ class TaskEntryViewModel(
             emptyList()
         }
     }
-
+    fun getAudioUris(): List<String> {
+        val audioUri = taskUiState.taskDetails.audioUri
+        return if (!audioUri.isNullOrBlank()) {
+            Gson().fromJson(audioUri, object : TypeToken<List<String>>() {}.type)
+        } else {
+            emptyList()
+        }
+    }
 
 }
 
@@ -169,7 +197,9 @@ data class TaskDetails(
     val fechaHoraVencimiento: String? = null,
     val estado: Boolean = false,
     val fotoUri: String? = null, // Serializado como JSON
-    val videoUri: String? = null // Serializado como JSON
+    val videoUri: String? = null, // Serializado como JSON
+    val audioUri: String? = null // Serializado como JSON
+
 )
 
 fun TaskDetails.toTask(): Task = Task(
@@ -179,7 +209,8 @@ fun TaskDetails.toTask(): Task = Task(
     fechaHoraVencimiento = fechaHoraVencimiento ?: "", // Valor predeterminado si es nulo
     estado = estado,
     fotoUri = fotoUri, // Agregar esta línea
-    videoUri = videoUri // Agregar esta línea
+    videoUri = videoUri, // Agregar esta línea
+    audioUri = audioUri // Agregar esta línea
 )
 
 

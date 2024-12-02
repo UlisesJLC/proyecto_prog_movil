@@ -46,20 +46,15 @@ class ComposeFileProvider : FileProvider(
                 file,
             )
         }
-        fun getAudioUri(context: Context): Uri {
-            val directory = File(context.cacheDir, "audio") // Crea un directorio "audio" en la caché
-            directory.mkdirs() // Crea el directorio si no existe
-            val file = File.createTempFile(
-                "audio_record_",
-                ".3gp", // Puedes cambiar la extensión si quieres
-                directory
-            )
-            val authority = context.packageName + ".fileprovider"
-            return getUriForFile(
-                context,
-                authority,
-                file
-            )
+        fun getAudioUri(context: Context, audioFile: File): Uri? {
+            val contentResolver = context.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Audio.Media.DISPLAY_NAME, audioFile.name)
+                put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg3")
+                // Ajusta la ruta relativa si es necesario
+                put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/" + audioFile.parentFile?.name)
+            }
+            return contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
         }
     }
 }

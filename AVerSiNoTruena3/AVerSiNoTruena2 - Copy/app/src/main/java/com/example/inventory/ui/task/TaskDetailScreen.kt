@@ -74,10 +74,12 @@ import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
 import com.example.inventory.data.Task
 import com.example.inventory.ui.AppViewModelProvider
+import com.example.inventory.ui.item.ReproducirAudioScreen
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
 import kotlinx.coroutines.launch
 import java.io.File
+//import kotlin.coroutines.jvm.internal.CompletedContinuation.context
 
 object TaskDetailsDestination : NavigationDestination {
     override val route = "task_details"
@@ -240,7 +242,6 @@ fun MultimediaViewer(
 ) {
     var fullscreenImageUri by remember { mutableStateOf<String?>(null) }
     var fullscreenVideoUri by remember { mutableStateOf<String?>(null) }
-    var fullscreenAudioUri by remember { mutableStateOf<String?>(null) }
 
     LazyRow(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_small)),
@@ -310,33 +311,12 @@ fun MultimediaViewer(
 
         // Mostrar audios
         items(audioUris.size) { index ->
-            val uri = audioUris[index]
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable { fullscreenAudioUri = uri } // Abre el diálogo de audio
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = stringResource(R.string.audio),
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                if (showRemoveButtons) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.delete),
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .clickable { onRemoveAudio(uri) }
-                            .size(24.dp),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+            val uriString = audioUris[index]
+            val uri = Uri.parse(uriString)
+            val realPath = uri.getRealPath(LocalContext.current)
+
+            val audioFile = File(realPath)
+            ReproducirAudioScreen(audioFile)
         }
     }
 
@@ -349,12 +329,8 @@ fun MultimediaViewer(
     fullscreenVideoUri?.let { uri ->
         FullscreenVideoDialog(uri = uri, onDismiss = { fullscreenVideoUri = null })
     }
-
-    // Diálogo de audio en pantalla completa
-    fullscreenAudioUri?.let { uri ->
-        FullscreenAudioDialog(uri = uri, onDismiss = { fullscreenAudioUri = null })
-    }
 }
+
 
 
 
@@ -399,68 +375,6 @@ fun FullscreenVideoDialog(uri: String, onDismiss: () -> Unit) {
         }
     )
 }
-
-
-@Composable
-fun FullscreenAudioDialog(uri: String, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val player = remember { AndroidAudioPlayer(context) }
-    var isPlaying by remember { mutableStateOf(false) }
-
-    // Convertir URI a un path legible
-    val filePath = Uri.parse(uri).getRealPath(context)
-
-    AlertDialog(
-        onDismissRequest = {
-            // Detener reproducción si el diálogo se cierra
-            if (isPlaying) {
-                player.stop()
-                isPlaying = false
-            }
-            onDismiss()
-        },
-        confirmButton = {},
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Mostrar nombre del archivo
-                Text(
-                    text = uri.split("/").lastOrNull() ?: "Archivo de audio",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                // Botón para reproducir/detener audio
-                Button(onClick = {
-                    if (isPlaying) {
-                        player.stop()
-                        isPlaying = false
-                    } else {
-                        if (filePath != null) {
-                            try {
-                                player.start(File(filePath))
-                                isPlaying = true
-                            } catch (e: Exception) {
-                                Log.e("FullscreenAudioDialog", "Error reproduciendo el audio: ${e.message}")
-                            }
-                        } else {
-                            Log.e("FullscreenAudioDialog", "Ruta de archivo inválida para URI: $uri")
-                        }
-                    }
-                }) {
-                    Text(if (isPlaying) "Detener" else "Reproducir")
-                }
-            }
-        },
-        modifier = Modifier.padding(16.dp)
-    )
-}
-
-
 
 
 

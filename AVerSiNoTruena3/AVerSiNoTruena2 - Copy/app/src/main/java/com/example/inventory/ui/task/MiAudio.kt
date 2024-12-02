@@ -90,7 +90,7 @@ fun GrabarAudioScreen( onClickStGra: () -> Unit,
             ) {
                 if (recordAudioPermissionState.status.shouldShowRationale) {
                     rationaleState = RationaleState(
-                        "Permiso para grabar audio",
+                        "Grabar audio",
                         "In order to use this feature please grant access by accepting " + "the grabar audio dialog." + "\n\nWould you like to continue?",
                     ) { proceed ->
                         if (proceed) {

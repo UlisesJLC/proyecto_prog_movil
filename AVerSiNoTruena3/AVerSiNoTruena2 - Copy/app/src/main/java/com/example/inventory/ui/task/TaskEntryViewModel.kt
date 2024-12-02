@@ -36,6 +36,19 @@ class TaskEntryViewModel(
         Log.d("TaskEntryViewModel", "Temporary alarm added: $fechaHora, $tipo")
     }
 
+    fun removeTempAlarm(index: Int) {
+        if (index in tempAlarms.indices) {
+            val removedAlarm = tempAlarms.removeAt(index)
+            Log.d("TaskEntryViewModel", "Temporary alarm removed: $removedAlarm")
+        } else {
+            Log.w("TaskEntryViewModel", "Invalid index for removing temporary alarm: $index")
+        }
+    }
+
+    fun getTempAlarms(): List<Pair<String, String>> = tempAlarms
+
+
+
     suspend fun processTempAlarms(taskId: Int) {
         tempAlarms.forEach { (fechaHora, tipo) ->
             val alarm = Alarm(

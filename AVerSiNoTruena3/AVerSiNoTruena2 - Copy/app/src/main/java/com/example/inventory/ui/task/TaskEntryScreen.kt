@@ -32,11 +32,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -178,6 +181,7 @@ fun TaskEntryBody(
     val photoUris = viewModel.getPhotoUris()
     val videoUris = viewModel.getVideoUris()
     val audioUris = viewModel.getAudioUris()
+    val tempAlarms = viewModel.getTempAlarms()
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
@@ -206,6 +210,37 @@ fun TaskEntryBody(
         ) {
             Text(text = stringResource(R.string.add_alarm))
         }
+
+        // Mostrar alarmas temporales
+        if (tempAlarms.isNotEmpty()) {
+            Text(
+                text = "Alarmas Temporales:",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            tempAlarms.forEachIndexed { index, alarm ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(text = "Fecha y Hora: ${alarm.first}")
+                        Text(text = "Tipo: ${alarm.second}")
+                    }
+                    Button(
+                        onClick = { viewModel.removeTempAlarm(index) },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(text = "Eliminar")
+                    }
+                }
+                Divider(color = MaterialTheme.colorScheme.onSurfaceVariant, thickness = 1.dp)
+            }
+        }
+
+
 
         takeAudio(viewModel = viewModel)
 

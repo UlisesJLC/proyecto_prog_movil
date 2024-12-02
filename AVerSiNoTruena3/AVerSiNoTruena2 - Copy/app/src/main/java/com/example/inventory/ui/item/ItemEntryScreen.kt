@@ -83,7 +83,7 @@ import com.example.inventory.ComposeFileProvider
 import com.example.inventory.InventoryTopAppBar
 import com.example.inventory.R
 import com.example.inventory.ui.AppViewModelProvider
-import com.example.inventory.ui.item.getRealPath
+import com.example.inventory.ui.task.getRealPath
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.task.AndroidAudioPlayer
 import com.example.inventory.ui.task.AndroidAudioRecorder
@@ -196,6 +196,7 @@ fun ItemEntryBody(
                 audioUris = tempAudioUris,
                 onRemovePhoto = onRemovePhoto,
                 onRemoveVideo = onRemoveVideo,
+                onRemoveAudio  = onRemoveAudio,
                 showRemoveButtons = true
             )
         }
@@ -401,7 +402,7 @@ fun MultimediaViewers(
         items(audioUris.size) { index ->
             val uriString = audioUris[index]
             val uri = Uri.parse(uriString)
-            //val realPath = uri.getRealPath(context)
+            val realPath = uri.getRealPath(context)
 
             val audioFile = File(realPath)
             ReproducirAudioScreen(audioFile)
@@ -452,16 +453,4 @@ fun takeAudio(viewModel: ItemEntryViewModel) {
     )
 }
 
-fun Uri.getRealPath(context: Context): String? {
-    if (scheme == "content") {
-        // Intenta obtener la ruta del archivo directamente de la URI
-        val pathSegments = pathSegments
-        if (pathSegments.size > 1) {
-            val fileName = pathSegments.last()
-            val directory = context.filesDir // O la ubicación donde se guarda el archivo
-            return File(directory, fileName).absolutePath
-        }
-    }
-    return path
-}
 

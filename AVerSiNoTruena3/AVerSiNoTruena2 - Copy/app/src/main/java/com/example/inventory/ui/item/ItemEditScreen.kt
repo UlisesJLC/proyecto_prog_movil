@@ -107,7 +107,7 @@ fun ItemEditBody(
 ) {
     val tempPhotoUris = viewModel.tempPhotoUris
     val tempVideoUris = viewModel.tempVideoUris
-
+    val tempAudioUris = viewModel.tempAudioUris
     Column(
         modifier = modifier.padding(dimensionResource(id = R.dimen.padding_medium)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.padding_large))
@@ -135,7 +135,7 @@ fun ItemEditBody(
             MultimediaViewers(
                 photoUris = tempPhotoUris,
                 videoUris = tempVideoUris,
-                audioUris = emptyList(), // Si no manejas audios, mantén la lista vacía
+                audioUris = tempAudioUris, // Si no manejas audios, mantén la lista vacía
                 onRemovePhoto = onRemovePhoto,
                 onRemoveVideo = onRemoveVideo,
                 onRemoveAudio = {}, // Vacío si no hay audios

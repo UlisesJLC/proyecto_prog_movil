@@ -314,7 +314,6 @@ fun MultimediaViewer(
             val uriString = audioUris[index]
             val uri = Uri.parse(uriString)
             val realPath = uri.getRealPath(LocalContext.current)
-
             val audioFile = File(realPath)
             ReproducirAudioScreen(audioFile)
         }
